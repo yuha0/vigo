@@ -97,11 +97,11 @@ func (s *Service) selected(ctx context.Context, sel *corev1.SelectedArt) {
 		Confirmed:       true,
 	}
 	s.selMu.Lock()
+	defer s.selMu.Unlock()
 	if old := s.selection; old != nil && old.ContentID == rec.ContentID && rec.MatteID == "" && rec.PortraitMatteID == "" {
 		rec.MatteID, rec.PortraitMatteID = old.MatteID, old.PortraitMatteID
 	}
 	s.selection = rec
-	s.selMu.Unlock()
 	s.saveSelection(ctx, rec)
 	s.setSelected(rec.selectedArt())
 }
@@ -109,12 +109,9 @@ func (s *Service) selected(ctx context.Context, sel *corev1.SelectedArt) {
 // selectionDeleted drops a confirmed selection whose artwork was deleted.
 func (s *Service) selectionDeleted(ctx context.Context, contentID string) {
 	s.selMu.Lock()
-	drop := s.selection != nil && s.selection.ContentID == contentID
-	if drop {
+	defer s.selMu.Unlock()
+	if s.selection != nil && s.selection.ContentID == contentID {
 		s.selection = nil
-	}
-	s.selMu.Unlock()
-	if drop {
 		s.saveSelection(ctx, nil)
 	}
 }
@@ -133,9 +130,8 @@ func (s *Service) refreshSelected(ctx context.Context, conn samsung.ArtConn) {
 		return
 	}
 	s.selMu.Lock()
-	confirmed = s.selection != nil
-	s.selMu.Unlock()
-	if !confirmed {
+	defer s.selMu.Unlock()
+	if s.selection == nil {
 		s.setSelected(&corev1.SelectedArt{ContentId: cur.ContentID, MatteId: cur.MatteID, PortraitMatteId: cur.PortraitMatteID})
 	}
 }

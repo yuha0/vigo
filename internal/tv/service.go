@@ -139,6 +139,9 @@ type Service struct {
 	refreshMu    sync.Mutex
 	lastRefresh  time.Time
 
+	// selMu is held across every selection change, including the store write
+	// and the published status, so concurrent selections, deletions and
+	// reports never leave memory, the database and Status disagreeing.
 	selMu sync.Mutex
 	// selection is the confirmed selection, or nil.
 	selection *selectionRecord
