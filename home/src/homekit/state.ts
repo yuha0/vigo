@@ -8,6 +8,8 @@ export interface HomeState {
   enabled: Partial<Record<AccessoryId, boolean>>;
   /** Last motion_timer value other than "off", restored when keep_art_on turns off. */
   lastMotionTimer?: string;
+  /** Remote button → target, as stored; validated by parseRemoteMapping. Absent means defaults. */
+  remote?: unknown;
 }
 
 const USERNAME = /^[0-9A-F]{2}(:[0-9A-F]{2}){5}$/;
@@ -28,6 +30,7 @@ export function parseHomeState(raw: unknown): HomeState {
     }
   }
   if (typeof r.lastMotionTimer === "string" && r.lastMotionTimer !== "") state.lastMotionTimer = r.lastMotionTimer;
+  if (r.remote !== undefined) state.remote = r.remote;
   return state;
 }
 

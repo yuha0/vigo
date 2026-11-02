@@ -12,17 +12,17 @@ import { ArtModeState, PowerState, type Setting, type Status } from "../gen/vigo
 import { errMsg, type Logger } from "../log";
 import type { Metrics } from "../metrics";
 import type { AccessoryId } from "../provider";
+import type { RemoteButtonName, RemoteTargetView } from "../remote";
 import {
   BRIGHTNESS_KEY,
   INPUT_ART,
   INPUT_TV,
   MOTION_TIMER_KEY,
   MOTION_TIMER_OFF,
-  REMOTE_KEYS,
-  SILENT_REMOTE_KEYS,
+  REMOTE_KEY_BUTTONS,
   percentToRange,
   rangeToPercent,
-  volumeKey,
+  volumeButton,
 } from "./mapping";
 
 export interface AccessoryContext {
@@ -31,6 +31,8 @@ export interface AccessoryContext {
   metrics: Metrics;
   /** Last non-off motion_timer; DEFAULT_MOTION_TIMER when none was seen. */
   lastMotionTimer(): string;
+  /** What a remote button does now. */
+  remoteTarget(button: RemoteButtonName): RemoteTargetView;
   /** How long a write waits for vigo-core before HomeKit is answered anyway. */
   writeWindowMs?: number;
 }
@@ -99,6 +101,31 @@ function ignored(ctx: AccessoryContext, id: AccessoryId, what: string, reason: s
   ctx.log.info({ accessory: id, write: what, reason }, "characteristic write ignored");
 }
 
+/** Runs what a remote button is bound to. A button bound to nothing is accepted silently. */
+async function press(ctx: AccessoryContext, id: AccessoryId, button: RemoteButtonName): Promise<void> {
+  const target = ctx.remoteTarget(button);
+  if ("key" in target) {
+    await write(ctx, id, `${button}=${target.key}`, () => ctx.core.sendKey(target.key));
+    return;
+  }
+  switch (target.action) {
+    case "none":
+      ctx.metrics.recordWrite(id, "ignored");
+      ctx.log.debug({ accessory: id, button }, "remote button is bound to nothing");
+      return;
+    case "show_art":
+      await write(ctx, id, `${button}=show_art`, () => ctx.core.showArt());
+      return;
+    case "toggle_art_mode":
+      await write(ctx, id, `${button}=toggle_art_mode`, async () => {
+        let artMode = ctx.core.status?.artMode;
+        if (artMode === undefined || artMode === ArtModeState.UNSPECIFIED) artMode = (await ctx.core.getStatus())?.artMode;
+        await ctx.core.setArtMode(artMode !== ArtModeState.ON);
+      });
+      return;
+  }
+}
+
 export function setInfo(acc: Accessory, model: string, serial: string): void {
   acc
     .getService(Service.AccessoryInformation)!
@@ -135,13 +162,13 @@ export function buildTelevision(ctx: AccessoryContext, name: string): BuiltAcces
     requireStatus(ctx).power === PowerState.ON ? Characteristic.Active.ACTIVE : Characteristic.Active.INACTIVE;
   active.onGet(getActive);
   active.onSet(async (value) => {
-    if (value === Characteristic.Active.ACTIVE) {
-      await write(ctx, id, "Active=1", () => ctx.core.showArt());
-      return;
+    try {
+      await press(ctx, id, value === Characteristic.Active.ACTIVE ? "power_on" : "power_off");
+    } finally {
+      // Report what the TV is doing, not what was asked: a power button bound to nothing must
+      // not leave the tile showing Off while the TV is on.
+      setImmediate(() => push(active, getActive));
     }
-    // No power-off method has been verified on this TV, so turning the tile off does nothing.
-    ignored(ctx, id, "Active=0", "no verified remote power-off");
-    setImmediate(() => push(active, getActive));
   });
 
   const activeId = tv.getCharacteristic(Characteristic.ActiveIdentifier);
@@ -154,17 +181,12 @@ export function buildTelevision(ctx: AccessoryContext, name: string): BuiltAcces
   });
 
   tv.getCharacteristic(Characteristic.RemoteKey).onSet(async (value) => {
-    if (SILENT_REMOTE_KEYS.has(value as number)) {
-      ctx.metrics.recordWrite(id, "ignored");
-      ctx.log.debug({ accessory: id, write: `RemoteKey=${JSON.stringify(value)}` }, "remote key has no TV action");
+    const button = REMOTE_KEY_BUTTONS.get(value as number);
+    if (!button) {
+      ignored(ctx, id, `RemoteKey=${JSON.stringify(value)}`, "no button on the iOS remote");
       return;
     }
-    const key = REMOTE_KEYS.get(value as number);
-    if (!key) {
-      ignored(ctx, id, `RemoteKey=${JSON.stringify(value)}`, "no mapping");
-      return;
-    }
-    await write(ctx, id, `RemoteKey=${key}`, () => ctx.core.sendKey(key));
+    await press(ctx, id, button);
   });
 
   const speaker = acc.addService(Service.TelevisionSpeaker, `${name} Speaker`);
@@ -175,13 +197,13 @@ export function buildTelevision(ctx: AccessoryContext, name: string): BuiltAcces
     .getCharacteristic(Characteristic.Mute)
     .onGet(() => muted)
     .onSet(async (value) => {
-      await write(ctx, id, "Mute", () => ctx.core.sendKey("KEY_MUTE"));
+      await press(ctx, id, "mute");
       muted = value as boolean;
     });
   speaker.getCharacteristic(Characteristic.VolumeSelector).onSet(async (value) => {
-    const key = volumeKey(value as number);
-    if (!key) throw new HapStatusError(HAPStatus.INVALID_VALUE_IN_REQUEST);
-    await write(ctx, id, `VolumeSelector=${key}`, () => ctx.core.sendKey(key));
+    const button = volumeButton(value as number);
+    if (!button) throw new HapStatusError(HAPStatus.INVALID_VALUE_IN_REQUEST);
+    await press(ctx, id, button);
   });
   tv.addLinkedService(speaker);
 

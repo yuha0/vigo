@@ -15,6 +15,19 @@ import {
   type PairingGroupView,
   type Provider,
 } from "../provider";
+import {
+  DEFAULT_REMOTE_MAPPING,
+  KEY_OPTIONS,
+  bindingsOf,
+  isRemoteButton,
+  normalize,
+  parseRemoteMapping,
+  targetError,
+  type RemoteBindingView,
+  type RemoteMapping,
+  type RemoteMappingView,
+  type RemoteTargetView,
+} from "../remote";
 import type { HomeStore } from "../storage/home";
 import {
   BRIDGED_BUILDERS,
@@ -67,6 +80,7 @@ export class HomeKitProvider implements Provider {
   private readonly opts: HomeKitOptions;
   private readonly ctx: AccessoryContext;
   private state: HomeState = { version: 1, groups: {}, enabled: {} };
+  private remote: RemoteMapping = { ...DEFAULT_REMOTE_MAPPING };
   private started = false;
 
   private tv?: BuiltAccessory;
@@ -90,6 +104,7 @@ export class HomeKitProvider implements Provider {
       log: this.log,
       metrics: this.metrics,
       lastMotionTimer: () => this.state.lastMotionTimer ?? DEFAULT_MOTION_TIMER,
+      remoteTarget: (button) => this.remote[button],
       writeWindowMs: opts.writeWindowMs,
     };
   }
@@ -99,6 +114,9 @@ export class HomeKitProvider implements Provider {
     return this.serialize(async () => {
       if (this.started) return;
       this.state = parseHomeState(this.store.loadHome());
+      const { mapping, invalid } = parseRemoteMapping(this.state.remote);
+      this.remote = mapping;
+      if (invalid.length > 0) this.log.warn({ buttons: invalid }, "invalid stored remote bindings; using the defaults for them");
       let changed = false;
       for (const g of ["tv", "bridge"] as const) {
         if (!this.state.groups[g]) {
@@ -190,6 +208,47 @@ export class HomeKitProvider implements Provider {
       this.updatePairedMetrics();
       return this.groupView(groupId);
     });
+  }
+
+  getRemoteMapping(): RemoteMappingView {
+    return { bindings: bindingsOf(this.remote), keys: [...KEY_OPTIONS] };
+  }
+
+  updateRemoteMapping(bindings: { button: string; target: unknown }[]): Promise<RemoteBindingView[]> {
+    return this.serialize(async () => {
+      this.requireStarted();
+      const next: RemoteMapping = { ...this.remote };
+      for (const b of bindings) {
+        if (!isRemoteButton(b.button)) throw new ProviderError("invalid_argument", `unknown remote button ${JSON.stringify(b.button)}`);
+        const err = targetError(b.target);
+        if (err) throw new ProviderError("invalid_argument", `${b.button}: ${err}`);
+        next[b.button] = normalize(b.target as RemoteTargetView);
+      }
+      await this.saveRemote(next);
+      this.log.info({ buttons: bindings.map((b) => b.button) }, "remote mapping updated");
+      return bindingsOf(this.remote);
+    });
+  }
+
+  resetRemoteMapping(): Promise<RemoteBindingView[]> {
+    return this.serialize(async () => {
+      this.requireStarted();
+      await this.saveRemote({ ...DEFAULT_REMOTE_MAPPING });
+      this.log.info("remote mapping reset to defaults");
+      return bindingsOf(this.remote);
+    });
+  }
+
+  private async saveRemote(next: RemoteMapping): Promise<void> {
+    const previous = this.state.remote;
+    this.state.remote = next;
+    try {
+      await this.store.saveHome(this.state);
+    } catch (err) {
+      this.state.remote = previous;
+      throw err;
+    }
+    this.remote = next;
   }
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {

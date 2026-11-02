@@ -85,8 +85,16 @@ export class Core extends EventEmitter<CoreEvents> {
     this.setConnected(false);
   }
 
+  /** Reads the status from vigo-core, bypassing the cache, and updates the cache with it. */
+  async getStatus(): Promise<Status | undefined> {
+    const res = await this.client.getStatus({}, { timeoutMs: this.opts.callTimeoutMs });
+    if (res.status) this.applyStatus(res.status);
+    return res.status;
+  }
+
   async showArt(): Promise<void> {
-    await this.client.showArt({}, { timeoutMs: this.opts.callTimeoutMs });
+    const res = await this.client.showArt({}, { timeoutMs: this.opts.callTimeoutMs });
+    if (res.status) this.applyStatus(res.status);
   }
 
   async setArtMode(on: boolean): Promise<void> {

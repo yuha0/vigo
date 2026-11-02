@@ -1,6 +1,8 @@
 // The protocol-neutral surface HomeService is served from. HomeKit implements it with HAP-NodeJS;
 // Matter is a stub. Views are plain objects so a provider never depends on the RPC layer.
 
+import type { RemoteBindingView, RemoteMappingView } from "./remote";
+
 export type ProtocolName = "homekit" | "matter";
 
 export type AccessoryId = "television" | "keep_art_on" | "art_mode" | "art_brightness";
@@ -36,6 +38,10 @@ export interface Provider {
   setAccessoryEnabled(id: string, enabled: boolean): Promise<AccessoryView>;
   listPairingGroups(): PairingGroupView[];
   resetPairing(groupId: string): Promise<PairingGroupView>;
+  getRemoteMapping(): RemoteMappingView;
+  /** Replaces the given buttons' bindings; the others keep theirs. All or nothing. */
+  updateRemoteMapping(bindings: { button: string; target: unknown }[]): Promise<RemoteBindingView[]>;
+  resetRemoteMapping(): Promise<RemoteBindingView[]>;
 }
 
 export type ProviderErrorCode = "not_found" | "invalid_argument" | "unimplemented" | "unavailable" | "internal";

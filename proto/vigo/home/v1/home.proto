@@ -17,6 +17,16 @@ service HomeService {
   // Forgets all controllers paired to the group and issues a new setup code.
   // The accessories disappear from Apple Home and must be re-added by hand.
   rpc ResetPairing(ResetPairingRequest) returns (ResetPairingResponse);
+
+  // What each button of the iOS remote (Control Center) does. Apple draws the
+  // remote, so buttons cannot be added or removed, only remapped.
+  rpc GetRemoteMapping(GetRemoteMappingRequest) returns (GetRemoteMappingResponse);
+
+  // Replaces the bindings for the given buttons; other buttons keep theirs.
+  rpc UpdateRemoteMapping(UpdateRemoteMappingRequest) returns (UpdateRemoteMappingResponse);
+
+  // Restores the default bindings for every button.
+  rpc ResetRemoteMapping(ResetRemoteMappingRequest) returns (ResetRemoteMappingResponse);
 }
 
 enum Protocol {
@@ -102,4 +112,86 @@ message ResetPairingRequest {
 
 message ResetPairingResponse {
   PairingGroup group = 1;
+}
+
+// A control of the iOS remote: the RemoteKey values iOS draws, the speaker's
+// volume (the phone's hardware buttons) and mute, and the power button, which
+// HomeKit delivers as the Television's Active characteristic.
+enum RemoteButton {
+  reserved 9 to 13;
+  reserved "REMOTE_BUTTON_EXIT", "REMOTE_BUTTON_REWIND", "REMOTE_BUTTON_FAST_FORWARD",
+    "REMOTE_BUTTON_NEXT_TRACK", "REMOTE_BUTTON_PREVIOUS_TRACK";
+  REMOTE_BUTTON_UNSPECIFIED = 0;
+  REMOTE_BUTTON_ARROW_UP = 1;
+  REMOTE_BUTTON_ARROW_DOWN = 2;
+  REMOTE_BUTTON_ARROW_LEFT = 3;
+  REMOTE_BUTTON_ARROW_RIGHT = 4;
+  REMOTE_BUTTON_SELECT = 5;
+  REMOTE_BUTTON_BACK = 6;
+  REMOTE_BUTTON_PLAY_PAUSE = 7;
+  REMOTE_BUTTON_INFORMATION = 8;
+  REMOTE_BUTTON_VOLUME_UP = 14;
+  REMOTE_BUTTON_VOLUME_DOWN = 15;
+  REMOTE_BUTTON_MUTE = 16;
+  // The power button pressed while HomeKit shows the TV off (Active = 1).
+  REMOTE_BUTTON_POWER_ON = 17;
+  // The power button pressed while HomeKit shows the TV on (Active = 0).
+  REMOTE_BUTTON_POWER_OFF = 18;
+}
+
+enum RemoteAction {
+  REMOTE_ACTION_UNSPECIFIED = 0;
+  // Do nothing; the press is accepted without error.
+  REMOTE_ACTION_NONE = 1;
+  // Art Mode on if off, off if on (TVService.SetArtMode).
+  REMOTE_ACTION_TOGGLE_ART_MODE = 2;
+  // TVService.ShowArt with the current selection.
+  REMOTE_ACTION_SHOW_ART = 3;
+}
+
+message RemoteTarget {
+  oneof target {
+    // A Samsung key code such as "KEY_MENU". KEY_POWER is never allowed.
+    string key = 1;
+    RemoteAction action = 2;
+  }
+}
+
+message RemoteBinding {
+  RemoteButton button = 1;
+  RemoteTarget target = 2;
+  reserved 3;
+  reserved "shown_by_ios";
+}
+
+message KeyOption {
+  string key = 1;
+  // Short human label, e.g. "Menu".
+  string label = 2;
+  // Verified to reach the tested TV; others are documented by the client
+  // library only.
+  bool verified = 3;
+}
+
+message GetRemoteMappingRequest {}
+
+message GetRemoteMappingResponse {
+  // One per RemoteButton, in display order.
+  repeated RemoteBinding bindings = 1;
+  // Every key that may be bound.
+  repeated KeyOption keys = 2;
+}
+
+message UpdateRemoteMappingRequest {
+  repeated RemoteBinding bindings = 1;
+}
+
+message UpdateRemoteMappingResponse {
+  repeated RemoteBinding bindings = 1;
+}
+
+message ResetRemoteMappingRequest {}
+
+message ResetRemoteMappingResponse {
+  repeated RemoteBinding bindings = 1;
 }

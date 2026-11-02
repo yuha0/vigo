@@ -289,21 +289,24 @@ Each group has its own setup code and `X-HM://` setup URI; the web UI renders th
 
 | id | Group | HomeKit service | Behaviour |
 |---|---|---|---|
-| `television` | `tv` | Television + TelevisionSpeaker + InputSources | Active=1 → `ShowArt`. Active=0 → no-op, logged (no verified power-off). Active reads `power == ON`. Inputs: `art` (Art Mode) → `SetArtMode(true)`; `tv` → `SetArtMode(false)`. RemoteKey → `SendKey`. Speaker volume → `KEY_VOLUP`/`KEY_VOLDOWN`/`KEY_MUTE` |
+| `television` | `tv` | Television + TelevisionSpeaker + InputSources | Active (the power button), RemoteKey and the speaker go through the remote mapping below. Active reads `power == ON`. Inputs: `art` (Art Mode) → `SetArtMode(true)`; `tv` → `SetArtMode(false)`. |
 | `keep_art_on` | `bridge` | Switch | On → `motion_timer = off`. Off → restore the last non-off value (default `5`). Reads on iff `motion_timer == off` |
 | `art_mode` | `bridge` | Switch | `SetArtMode` |
 | `art_brightness` | `bridge` | Lightbulb (brightness only) | 0–100% ↔ setting `brightness` range, rounded |
 
-HomeKit RemoteKey mapping:
+The iOS remote's buttons are drawn by Apple and cannot be added or removed, so each one is remappable (`HomeService.GetRemoteMapping` / `UpdateRemoteMapping`, stored in vigo-home's state). The mappable controls are the RemoteKeys iOS draws (arrows, select, back, play/pause, information), the speaker's volume (the phone's hardware buttons while the remote is open) and mute, and the power button, which HomeKit delivers as the Television's `Active`: a press while the tile shows off is "power on", while it shows on is "power off". HomeKit has no press, release or hold events, so each control has one action. A control can do nothing, toggle Art Mode, show art, or send a Samsung key from the allow-list in `home/src/homekit/mapping.ts`: the keys [samsungtvws documents](https://github.com/xchwarze/samsung-tv-ws-api/blob/1b7302b1509d62f6c375d8ca401b100ee55670dc/samsungtvws/shortcuts.py), except `KEY_POWER`, which from motion-sleep powers the TV fully off. There is no verified remote power-off, so "power off" can at most switch to TV mode. After a power press the tile reports the TV's real state, not the requested one.
 
-| RemoteKey | TV key |
+Default mapping:
+
+| Control | Default |
 |---|---|
-| ARROW_UP / DOWN / LEFT / RIGHT | `KEY_UP` / `KEY_DOWN` / `KEY_LEFT` / `KEY_RIGHT` |
-| SELECT | `KEY_ENTER` |
-| BACK | `KEY_RETURN` |
-| EXIT | `KEY_EXIT` |
-| PLAY_PAUSE | `KEY_PLAY` |
-| INFORMATION | nothing (accepted and ignored; Apple always shows the button) |
+| power on | show art |
+| power off | nothing |
+| arrows | `KEY_UP` / `KEY_DOWN` / `KEY_LEFT` / `KEY_RIGHT` |
+| select | `KEY_ENTER` |
+| back | `KEY_RETURN` |
+| volume up / down, mute | `KEY_VOLUP` / `KEY_VOLDOWN`, `KEY_MUTE` |
+| information, play/pause | nothing |
 
 Only `KEY_UP`, `KEY_ENTER`, `KEY_HOME` and `KEY_VOLUP` have been observed reaching the tested TV. Verify every other key against the TV before relying on it.
 

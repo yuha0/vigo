@@ -14,7 +14,8 @@ import {
   buildTelevision,
   type AccessoryContext,
 } from "./accessories";
-import { DEFAULT_MOTION_TIMER, REMOTE_KEYS, percentToRange, rangeToPercent } from "./mapping";
+import { DEFAULT_REMOTE_MAPPING, type RemoteMapping } from "../remote";
+import { DEFAULT_MOTION_TIMER, REMOTE_KEY_BUTTONS, percentToRange, rangeToPercent } from "./mapping";
 
 let core: Core | undefined;
 afterEach(async () => {
@@ -27,13 +28,15 @@ async function setup(lastMotionTimer?: string) {
   core = c.core;
   const metrics = new Metrics({ defaultMetrics: false });
   let last = lastMotionTimer;
+  const remote: RemoteMapping = { ...DEFAULT_REMOTE_MAPPING };
   const ctx: AccessoryContext = {
     core: c.core,
     log: silentLogger(),
     metrics,
     lastMotionTimer: () => last ?? DEFAULT_MOTION_TIMER,
+    remoteTarget: (b) => remote[b],
   };
-  return { ...c, ctx, metrics, setLast: (v: string) => (last = v) };
+  return { ...c, ctx, metrics, remote, setLast: (v: string) => (last = v) };
 }
 
 function char(acc: Accessory, service: typeof Service.Television | typeof Service.Switch, c: typeof Characteristic.On) {
@@ -97,37 +100,99 @@ describe("television", () => {
     await expect(id.handleSetRequest(3)).rejects.toBe(HAPStatus.INVALID_VALUE_IN_REQUEST);
   });
 
-  it("maps the RemoteKeys in the design, accepts INFORMATION silently and ignores the rest", async () => {
+  it("maps the RemoteKey values the iOS remote draws", () => {
+    const R = Characteristic.RemoteKey;
+    const values = [R.ARROW_UP, R.ARROW_DOWN, R.ARROW_LEFT, R.ARROW_RIGHT, R.SELECT, R.BACK, R.PLAY_PAUSE, R.INFORMATION];
+    expect([...REMOTE_KEY_BUTTONS.keys()].sort((a, b) => a - b)).toEqual([...values].sort((a, b) => a - b));
+  });
+
+  it("sends the default keys and accepts unbound buttons silently", async () => {
     const { tv, ctx, metrics } = await setup();
     const { accessory } = buildTelevision(ctx, "The Frame");
     const rk = char(accessory, Service.Television, Characteristic.RemoteKey);
     const R = Characteristic.RemoteKey;
-    const expected: [number, string][] = [
-      [R.ARROW_UP, "KEY_UP"],
-      [R.ARROW_DOWN, "KEY_DOWN"],
-      [R.ARROW_LEFT, "KEY_LEFT"],
-      [R.ARROW_RIGHT, "KEY_RIGHT"],
-      [R.SELECT, "KEY_ENTER"],
-      [R.BACK, "KEY_RETURN"],
-      [R.EXIT, "KEY_EXIT"],
-      [R.PLAY_PAUSE, "KEY_PLAY"],
-    ];
-    expect([...REMOTE_KEYS.entries()].sort()).toEqual([...expected].sort());
-    for (const [hk] of expected) await rk.handleSetRequest(hk);
-    expect(calls(tv, "sendKey").map((r) => r.key)).toEqual(expected.map(([, k]) => k));
+    for (const v of [R.ARROW_UP, R.ARROW_DOWN, R.ARROW_LEFT, R.ARROW_RIGHT, R.SELECT, R.BACK]) await rk.handleSetRequest(v);
+    expect(calls(tv, "sendKey").map((r) => r.key)).toEqual(["KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT", "KEY_ENTER", "KEY_RETURN"]);
 
-    await rk.handleSetRequest(R.REWIND);
-    expect(calls(tv, "sendKey")).toHaveLength(expected.length);
-    expect(await writes(metrics, "television", "ignored")).toBe(1);
-
-    // The (i) button: accepted without an error, and nothing reaches the TV.
-    await expect(rk.handleSetRequest(R.INFORMATION)).resolves.toBeUndefined();
-    expect(calls(tv, "sendKey")).toHaveLength(expected.length);
-    expect(await writes(metrics, "television", "ignored")).toBe(2);
+    const unbound = [R.INFORMATION, R.EXIT, R.PLAY_PAUSE, R.REWIND, R.FAST_FORWARD, R.NEXT_TRACK, R.PREVIOUS_TRACK];
+    for (const v of unbound) await expect(rk.handleSetRequest(v)).resolves.toBeUndefined();
+    expect(calls(tv, "sendKey")).toHaveLength(6);
+    expect(tv.calls.filter((c) => c.method !== "sendKey")).toHaveLength(0);
+    expect(await writes(metrics, "television", "ignored")).toBe(unbound.length);
   });
 
-  it("maps the speaker to volume and mute keys", async () => {
+  it("routes the power button through power_on and power_off", async () => {
+    const { tv, ctx, remote } = await setup();
+    const { accessory } = buildTelevision(ctx, "The Frame");
+    const active = char(accessory, Service.Television, Characteristic.Active);
+    remote.power_on = { key: "KEY_HOME" };
+    remote.power_off = { action: "toggle_art_mode" };
+    await active.handleSetRequest(1);
+    await active.handleSetRequest(0);
+    expect(tv.calls.map((c) => c.method)).toEqual(["sendKey", "setArtMode"]);
+    expect(calls(tv, "sendKey")[0]).toMatchObject({ key: "KEY_HOME" });
+    expect(calls(tv, "setArtMode")[0]).toMatchObject({ on: false });
+  });
+
+  it("reports the real power state after a power press, not the requested one", async () => {
     const { tv, ctx } = await setup();
+    const { accessory } = buildTelevision(ctx, "The Frame");
+    const active = char(accessory, Service.Television, Characteristic.Active);
+
+    tv.status = create(StatusSchema, { ...tv.status, power: PowerState.STANDBY });
+    tv.emit({ case: "status", value: tv.status });
+    await until(() => core!.status?.power === PowerState.STANDBY);
+    await active.handleSetRequest(1);
+    await until(() => active.value === 1);
+    expect(calls(tv, "showArt")).toHaveLength(1);
+
+    await active.handleSetRequest(0);
+    expect(active.value).toBe(0);
+    await until(() => active.value === 1);
+  });
+
+  it("follows binding changes immediately", async () => {
+    const { tv, ctx, remote } = await setup();
+    const { accessory } = buildTelevision(ctx, "The Frame");
+    const rk = char(accessory, Service.Television, Characteristic.RemoteKey);
+    remote.information = { key: "KEY_MENU" };
+    remote.play_pause = { action: "show_art" };
+    remote.arrow_up = { action: "none" };
+    await rk.handleSetRequest(Characteristic.RemoteKey.INFORMATION);
+    await rk.handleSetRequest(Characteristic.RemoteKey.PLAY_PAUSE);
+    await rk.handleSetRequest(Characteristic.RemoteKey.ARROW_UP);
+    expect(tv.calls.map((c) => [c.method, (c.req as { key?: string }).key])).toEqual([
+      ["sendKey", "KEY_MENU"],
+      ["showArt", undefined],
+    ]);
+  });
+
+  it("toggles art mode from the cached state", async () => {
+    const { tv, ctx, remote } = await setup();
+    const { accessory } = buildTelevision(ctx, "The Frame");
+    const rk = char(accessory, Service.Television, Characteristic.RemoteKey);
+    remote.play_pause = { action: "toggle_art_mode" };
+    await rk.handleSetRequest(Characteristic.RemoteKey.PLAY_PAUSE);
+    await rk.handleSetRequest(Characteristic.RemoteKey.PLAY_PAUSE);
+    expect(calls(tv, "setArtMode").map((r) => r.on)).toEqual([false, true]);
+    expect(calls(tv, "getStatus")).toHaveLength(0);
+  });
+
+  it("reads GetStatus before toggling when the art mode is unknown", async () => {
+    const { tv, ctx, remote } = await setup();
+    const { accessory } = buildTelevision(ctx, "The Frame");
+    tv.status = create(StatusSchema, { ...tv.status, artMode: ArtModeState.UNSPECIFIED });
+    tv.emit({ case: "status", value: tv.status });
+    await until(() => core!.status?.artMode === ArtModeState.UNSPECIFIED);
+    tv.status = create(StatusSchema, { ...tv.status, artMode: ArtModeState.OFF });
+    remote.select = { action: "toggle_art_mode" };
+    await char(accessory, Service.Television, Characteristic.RemoteKey).handleSetRequest(Characteristic.RemoteKey.SELECT);
+    expect(calls(tv, "getStatus")).toHaveLength(1);
+    expect(calls(tv, "setArtMode").map((r) => r.on)).toEqual([true]);
+  });
+
+  it("routes the speaker through the volume and mute bindings", async () => {
+    const { tv, ctx, remote, metrics } = await setup();
     const { accessory } = buildTelevision(ctx, "The Frame");
     const speaker = accessory.getService(Service.TelevisionSpeaker)!;
     const sel = speaker.getCharacteristic(Characteristic.VolumeSelector);
@@ -138,6 +203,13 @@ describe("television", () => {
     expect(await mute.handleGetRequest()).toBe(true);
     expect(calls(tv, "sendKey").map((r) => r.key)).toEqual(["KEY_VOLUP", "KEY_VOLDOWN", "KEY_MUTE"]);
     expect(speaker.getCharacteristic(Characteristic.VolumeControlType).value).toBe(Characteristic.VolumeControlType.RELATIVE);
+
+    remote.volume_up = { key: "KEY_CHUP" };
+    remote.mute = { action: "none" };
+    await sel.handleSetRequest(Characteristic.VolumeSelector.INCREMENT);
+    await mute.handleSetRequest(false);
+    expect(calls(tv, "sendKey").map((r) => r.key)).toEqual(["KEY_VOLUP", "KEY_VOLDOWN", "KEY_MUTE", "KEY_CHUP"]);
+    expect(await writes(metrics, "television", "ignored")).toBe(1);
   });
 
   it("publishes art and tv input sources linked to the television", async () => {

@@ -1,3 +1,4 @@
+import type { RemoteBindingView, RemoteMappingView } from "../remote";
 import {
   ProviderError,
   type AccessoryView,
@@ -31,6 +32,18 @@ export class MatterProvider implements Provider {
   }
 
   resetPairing(): Promise<PairingGroupView> {
+    return Promise.reject(new ProviderError("unimplemented", "the matter provider is not implemented"));
+  }
+
+  getRemoteMapping(): RemoteMappingView {
+    return { bindings: [], keys: [] };
+  }
+
+  updateRemoteMapping(): Promise<RemoteBindingView[]> {
+    return Promise.reject(new ProviderError("unimplemented", "the matter provider is not implemented"));
+  }
+
+  resetRemoteMapping(): Promise<RemoteBindingView[]> {
     return Promise.reject(new ProviderError("unimplemented", "the matter provider is not implemented"));
   }
 }

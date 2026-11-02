@@ -1,6 +1,6 @@
 import { Code, ConnectError, createClient, createRouterTransport } from "@connectrpc/connect";
 import { describe, expect, it } from "vitest";
-import { AccessoryKind, HomeService, Protocol } from "../gen/vigo/home/v1/home_pb";
+import { AccessoryKind, HomeService, Protocol, RemoteAction, RemoteButton } from "../gen/vigo/home/v1/home_pb";
 import { MatterProvider } from "../matter/provider";
 import {
   ACCESSORY_CATALOG,
@@ -9,6 +9,18 @@ import {
   type PairingGroupView,
   type Provider,
 } from "../provider";
+import {
+  DEFAULT_REMOTE_MAPPING,
+  KEY_OPTIONS,
+  bindingsOf,
+  isRemoteButton,
+  normalize,
+  targetError,
+  type RemoteBindingView,
+  type RemoteMapping,
+  type RemoteMappingView,
+  type RemoteTargetView,
+} from "../remote";
 import { homeRoutes, type HomeRuntime } from "./home-service";
 
 class StubProvider implements Provider {
@@ -34,6 +46,23 @@ class StubProvider implements Provider {
       { id: "tv", name: "Television", advertised: true, paired: true, setupCode: "111-22-333", setupUri: "X-HM://0000000001ABCD", accessoryIds: ["television"] },
       { id: "bridge", name: "Accessories", advertised: false, paired: false, setupCode: "222-33-444", setupUri: "X-HM://0000000002WXYZ", accessoryIds: [] },
     ];
+  }
+  remote: RemoteMapping = { ...DEFAULT_REMOTE_MAPPING };
+  getRemoteMapping(): RemoteMappingView {
+    return { bindings: bindingsOf(this.remote), keys: [...KEY_OPTIONS] };
+  }
+  updateRemoteMapping(bindings: { button: string; target: unknown }[]): Promise<RemoteBindingView[]> {
+    for (const b of bindings) {
+      if (!isRemoteButton(b.button)) return Promise.reject(new ProviderError("invalid_argument", "button"));
+      const err = targetError(b.target);
+      if (err) return Promise.reject(new ProviderError("invalid_argument", err));
+      this.remote[b.button] = normalize(b.target as RemoteTargetView);
+    }
+    return Promise.resolve(bindingsOf(this.remote));
+  }
+  resetRemoteMapping(): Promise<RemoteBindingView[]> {
+    this.remote = { ...DEFAULT_REMOTE_MAPPING };
+    return Promise.resolve(bindingsOf(this.remote));
   }
   resetPairing(groupId: string): Promise<PairingGroupView> {
     this.resets.push(groupId);
@@ -101,6 +130,37 @@ describe("HomeService", () => {
     expect(await code(c.resetPairing({ groupId: "nope" }))).toBe(Code.NotFound);
   });
 
+  it("serves the remote mapping with proto enums", async () => {
+    const c = client(new StubProvider());
+    const m = await c.getRemoteMapping({});
+    expect(m.bindings).toHaveLength(13);
+    expect(m.bindings[0]).toMatchObject({ button: RemoteButton.POWER_ON, target: { target: { case: "action", value: RemoteAction.SHOW_ART } } });
+    expect(m.bindings[2]).toMatchObject({ button: RemoteButton.ARROW_UP, target: { target: { case: "key", value: "KEY_UP" } } });
+    expect(m.bindings.find((b) => b.button === RemoteButton.INFORMATION)?.target?.target).toEqual({ case: "action", value: RemoteAction.NONE });
+    expect(m.keys.find((k) => k.key === "KEY_UP")).toMatchObject({ label: "Up", verified: true });
+
+    const up = await c.updateRemoteMapping({
+      bindings: [{ button: RemoteButton.PLAY_PAUSE, target: { target: { case: "action", value: RemoteAction.TOGGLE_ART_MODE } } }],
+    });
+    expect(up.bindings.find((b) => b.button === RemoteButton.PLAY_PAUSE)?.target?.target).toEqual({ case: "action", value: RemoteAction.TOGGLE_ART_MODE });
+    expect(up.bindings.find((b) => b.button === RemoteButton.SELECT)?.target?.target).toEqual({ case: "key", value: "KEY_ENTER" });
+
+    const reset = await c.resetRemoteMapping({});
+    expect(reset.bindings.find((b) => b.button === RemoteButton.PLAY_PAUSE)?.target?.target).toEqual({ case: "action", value: RemoteAction.NONE });
+  });
+
+  it("rejects invalid remote bindings with invalid_argument", async () => {
+    const c = client(new StubProvider());
+    const bind = (button: RemoteButton, target: { case: "key"; value: string } | { case: "action"; value: RemoteAction } | { case: undefined }) =>
+      c.updateRemoteMapping({ bindings: [{ button, target: { target: target } }] });
+    expect(await code(bind(RemoteButton.SELECT, { case: "key", value: "KEY_POWER" }))).toBe(Code.InvalidArgument);
+    expect(await code(bind(RemoteButton.SELECT, { case: "key", value: "KEY_NOPE" }))).toBe(Code.InvalidArgument);
+    expect(await code(bind(RemoteButton.UNSPECIFIED, { case: "key", value: "KEY_UP" }))).toBe(Code.InvalidArgument);
+    expect(await code(bind(9 as RemoteButton, { case: "key", value: "KEY_UP" }))).toBe(Code.InvalidArgument);
+    expect(await code(bind(RemoteButton.SELECT, { case: "action", value: RemoteAction.UNSPECIFIED }))).toBe(Code.InvalidArgument);
+    expect(await code(bind(RemoteButton.SELECT, { case: undefined }))).toBe(Code.InvalidArgument);
+  });
+
   it("answers GetProvider on standby and refuses everything else", async () => {
     const c = client(undefined, { coreConnected: () => false });
     expect((await c.getProvider({})).provider).toMatchObject({ leader: false, coreConnected: false });
@@ -108,6 +168,9 @@ describe("HomeService", () => {
     expect(await code(c.listPairingGroups({}))).toBe(Code.Unavailable);
     expect(await code(c.setAccessoryEnabled({ id: "art_mode", enabled: true }))).toBe(Code.Unavailable);
     expect(await code(c.resetPairing({ groupId: "tv" }))).toBe(Code.Unavailable);
+    expect(await code(c.getRemoteMapping({}))).toBe(Code.Unavailable);
+    expect(await code(c.updateRemoteMapping({}))).toBe(Code.Unavailable);
+    expect(await code(c.resetRemoteMapping({}))).toBe(Code.Unavailable);
   });
 
   it("serves the matter stub as unimplemented", async () => {

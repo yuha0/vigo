@@ -122,6 +122,148 @@ func (AccessoryKind) EnumDescriptor() ([]byte, []int) {
 	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{1}
 }
 
+// A control of the iOS remote: the RemoteKey values iOS draws, the speaker's
+// volume (the phone's hardware buttons) and mute, and the power button, which
+// HomeKit delivers as the Television's Active characteristic.
+type RemoteButton int32
+
+const (
+	RemoteButton_REMOTE_BUTTON_UNSPECIFIED RemoteButton = 0
+	RemoteButton_REMOTE_BUTTON_ARROW_UP    RemoteButton = 1
+	RemoteButton_REMOTE_BUTTON_ARROW_DOWN  RemoteButton = 2
+	RemoteButton_REMOTE_BUTTON_ARROW_LEFT  RemoteButton = 3
+	RemoteButton_REMOTE_BUTTON_ARROW_RIGHT RemoteButton = 4
+	RemoteButton_REMOTE_BUTTON_SELECT      RemoteButton = 5
+	RemoteButton_REMOTE_BUTTON_BACK        RemoteButton = 6
+	RemoteButton_REMOTE_BUTTON_PLAY_PAUSE  RemoteButton = 7
+	RemoteButton_REMOTE_BUTTON_INFORMATION RemoteButton = 8
+	RemoteButton_REMOTE_BUTTON_VOLUME_UP   RemoteButton = 14
+	RemoteButton_REMOTE_BUTTON_VOLUME_DOWN RemoteButton = 15
+	RemoteButton_REMOTE_BUTTON_MUTE        RemoteButton = 16
+	// The power button pressed while HomeKit shows the TV off (Active = 1).
+	RemoteButton_REMOTE_BUTTON_POWER_ON RemoteButton = 17
+	// The power button pressed while HomeKit shows the TV on (Active = 0).
+	RemoteButton_REMOTE_BUTTON_POWER_OFF RemoteButton = 18
+)
+
+// Enum value maps for RemoteButton.
+var (
+	RemoteButton_name = map[int32]string{
+		0:  "REMOTE_BUTTON_UNSPECIFIED",
+		1:  "REMOTE_BUTTON_ARROW_UP",
+		2:  "REMOTE_BUTTON_ARROW_DOWN",
+		3:  "REMOTE_BUTTON_ARROW_LEFT",
+		4:  "REMOTE_BUTTON_ARROW_RIGHT",
+		5:  "REMOTE_BUTTON_SELECT",
+		6:  "REMOTE_BUTTON_BACK",
+		7:  "REMOTE_BUTTON_PLAY_PAUSE",
+		8:  "REMOTE_BUTTON_INFORMATION",
+		14: "REMOTE_BUTTON_VOLUME_UP",
+		15: "REMOTE_BUTTON_VOLUME_DOWN",
+		16: "REMOTE_BUTTON_MUTE",
+		17: "REMOTE_BUTTON_POWER_ON",
+		18: "REMOTE_BUTTON_POWER_OFF",
+	}
+	RemoteButton_value = map[string]int32{
+		"REMOTE_BUTTON_UNSPECIFIED": 0,
+		"REMOTE_BUTTON_ARROW_UP":    1,
+		"REMOTE_BUTTON_ARROW_DOWN":  2,
+		"REMOTE_BUTTON_ARROW_LEFT":  3,
+		"REMOTE_BUTTON_ARROW_RIGHT": 4,
+		"REMOTE_BUTTON_SELECT":      5,
+		"REMOTE_BUTTON_BACK":        6,
+		"REMOTE_BUTTON_PLAY_PAUSE":  7,
+		"REMOTE_BUTTON_INFORMATION": 8,
+		"REMOTE_BUTTON_VOLUME_UP":   14,
+		"REMOTE_BUTTON_VOLUME_DOWN": 15,
+		"REMOTE_BUTTON_MUTE":        16,
+		"REMOTE_BUTTON_POWER_ON":    17,
+		"REMOTE_BUTTON_POWER_OFF":   18,
+	}
+)
+
+func (x RemoteButton) Enum() *RemoteButton {
+	p := new(RemoteButton)
+	*p = x
+	return p
+}
+
+func (x RemoteButton) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RemoteButton) Descriptor() protoreflect.EnumDescriptor {
+	return file_vigo_home_v1_home_proto_enumTypes[2].Descriptor()
+}
+
+func (RemoteButton) Type() protoreflect.EnumType {
+	return &file_vigo_home_v1_home_proto_enumTypes[2]
+}
+
+func (x RemoteButton) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RemoteButton.Descriptor instead.
+func (RemoteButton) EnumDescriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{2}
+}
+
+type RemoteAction int32
+
+const (
+	RemoteAction_REMOTE_ACTION_UNSPECIFIED RemoteAction = 0
+	// Do nothing; the press is accepted without error.
+	RemoteAction_REMOTE_ACTION_NONE RemoteAction = 1
+	// Art Mode on if off, off if on (TVService.SetArtMode).
+	RemoteAction_REMOTE_ACTION_TOGGLE_ART_MODE RemoteAction = 2
+	// TVService.ShowArt with the current selection.
+	RemoteAction_REMOTE_ACTION_SHOW_ART RemoteAction = 3
+)
+
+// Enum value maps for RemoteAction.
+var (
+	RemoteAction_name = map[int32]string{
+		0: "REMOTE_ACTION_UNSPECIFIED",
+		1: "REMOTE_ACTION_NONE",
+		2: "REMOTE_ACTION_TOGGLE_ART_MODE",
+		3: "REMOTE_ACTION_SHOW_ART",
+	}
+	RemoteAction_value = map[string]int32{
+		"REMOTE_ACTION_UNSPECIFIED":     0,
+		"REMOTE_ACTION_NONE":            1,
+		"REMOTE_ACTION_TOGGLE_ART_MODE": 2,
+		"REMOTE_ACTION_SHOW_ART":        3,
+	}
+)
+
+func (x RemoteAction) Enum() *RemoteAction {
+	p := new(RemoteAction)
+	*p = x
+	return p
+}
+
+func (x RemoteAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RemoteAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_vigo_home_v1_home_proto_enumTypes[3].Descriptor()
+}
+
+func (RemoteAction) Type() protoreflect.EnumType {
+	return &file_vigo_home_v1_home_proto_enumTypes[3]
+}
+
+func (x RemoteAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RemoteAction.Descriptor instead.
+func (RemoteAction) EnumDescriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{3}
+}
+
 type Provider struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Protocol Protocol               `protobuf:"varint,1,opt,name=protocol,proto3,enum=vigo.home.v1.Protocol" json:"protocol,omitempty"`
@@ -815,6 +957,462 @@ func (x *ResetPairingResponse) GetGroup() *PairingGroup {
 	return nil
 }
 
+type RemoteTarget struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Target:
+	//
+	//	*RemoteTarget_Key
+	//	*RemoteTarget_Action
+	Target        isRemoteTarget_Target `protobuf_oneof:"target"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoteTarget) Reset() {
+	*x = RemoteTarget{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoteTarget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoteTarget) ProtoMessage() {}
+
+func (x *RemoteTarget) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoteTarget.ProtoReflect.Descriptor instead.
+func (*RemoteTarget) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RemoteTarget) GetTarget() isRemoteTarget_Target {
+	if x != nil {
+		return x.Target
+	}
+	return nil
+}
+
+func (x *RemoteTarget) GetKey() string {
+	if x != nil {
+		if x, ok := x.Target.(*RemoteTarget_Key); ok {
+			return x.Key
+		}
+	}
+	return ""
+}
+
+func (x *RemoteTarget) GetAction() RemoteAction {
+	if x != nil {
+		if x, ok := x.Target.(*RemoteTarget_Action); ok {
+			return x.Action
+		}
+	}
+	return RemoteAction_REMOTE_ACTION_UNSPECIFIED
+}
+
+type isRemoteTarget_Target interface {
+	isRemoteTarget_Target()
+}
+
+type RemoteTarget_Key struct {
+	// A Samsung key code such as "KEY_MENU". KEY_POWER is never allowed.
+	Key string `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
+}
+
+type RemoteTarget_Action struct {
+	Action RemoteAction `protobuf:"varint,2,opt,name=action,proto3,enum=vigo.home.v1.RemoteAction,oneof"`
+}
+
+func (*RemoteTarget_Key) isRemoteTarget_Target() {}
+
+func (*RemoteTarget_Action) isRemoteTarget_Target() {}
+
+type RemoteBinding struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Button        RemoteButton           `protobuf:"varint,1,opt,name=button,proto3,enum=vigo.home.v1.RemoteButton" json:"button,omitempty"`
+	Target        *RemoteTarget          `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoteBinding) Reset() {
+	*x = RemoteBinding{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoteBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoteBinding) ProtoMessage() {}
+
+func (x *RemoteBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoteBinding.ProtoReflect.Descriptor instead.
+func (*RemoteBinding) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *RemoteBinding) GetButton() RemoteButton {
+	if x != nil {
+		return x.Button
+	}
+	return RemoteButton_REMOTE_BUTTON_UNSPECIFIED
+}
+
+func (x *RemoteBinding) GetTarget() *RemoteTarget {
+	if x != nil {
+		return x.Target
+	}
+	return nil
+}
+
+type KeyOption struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Key   string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// Short human label, e.g. "Menu".
+	Label string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	// Verified to reach the tested TV; others are documented by the client
+	// library only.
+	Verified      bool `protobuf:"varint,3,opt,name=verified,proto3" json:"verified,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KeyOption) Reset() {
+	*x = KeyOption{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KeyOption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeyOption) ProtoMessage() {}
+
+func (x *KeyOption) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeyOption.ProtoReflect.Descriptor instead.
+func (*KeyOption) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *KeyOption) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *KeyOption) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *KeyOption) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+type GetRemoteMappingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRemoteMappingRequest) Reset() {
+	*x = GetRemoteMappingRequest{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRemoteMappingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRemoteMappingRequest) ProtoMessage() {}
+
+func (x *GetRemoteMappingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRemoteMappingRequest.ProtoReflect.Descriptor instead.
+func (*GetRemoteMappingRequest) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{16}
+}
+
+type GetRemoteMappingResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// One per RemoteButton, in display order.
+	Bindings []*RemoteBinding `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
+	// Every key that may be bound.
+	Keys          []*KeyOption `protobuf:"bytes,2,rep,name=keys,proto3" json:"keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetRemoteMappingResponse) Reset() {
+	*x = GetRemoteMappingResponse{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetRemoteMappingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRemoteMappingResponse) ProtoMessage() {}
+
+func (x *GetRemoteMappingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRemoteMappingResponse.ProtoReflect.Descriptor instead.
+func (*GetRemoteMappingResponse) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetRemoteMappingResponse) GetBindings() []*RemoteBinding {
+	if x != nil {
+		return x.Bindings
+	}
+	return nil
+}
+
+func (x *GetRemoteMappingResponse) GetKeys() []*KeyOption {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
+type UpdateRemoteMappingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bindings      []*RemoteBinding       `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateRemoteMappingRequest) Reset() {
+	*x = UpdateRemoteMappingRequest{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRemoteMappingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRemoteMappingRequest) ProtoMessage() {}
+
+func (x *UpdateRemoteMappingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateRemoteMappingRequest.ProtoReflect.Descriptor instead.
+func (*UpdateRemoteMappingRequest) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *UpdateRemoteMappingRequest) GetBindings() []*RemoteBinding {
+	if x != nil {
+		return x.Bindings
+	}
+	return nil
+}
+
+type UpdateRemoteMappingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bindings      []*RemoteBinding       `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateRemoteMappingResponse) Reset() {
+	*x = UpdateRemoteMappingResponse{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRemoteMappingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRemoteMappingResponse) ProtoMessage() {}
+
+func (x *UpdateRemoteMappingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateRemoteMappingResponse.ProtoReflect.Descriptor instead.
+func (*UpdateRemoteMappingResponse) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *UpdateRemoteMappingResponse) GetBindings() []*RemoteBinding {
+	if x != nil {
+		return x.Bindings
+	}
+	return nil
+}
+
+type ResetRemoteMappingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetRemoteMappingRequest) Reset() {
+	*x = ResetRemoteMappingRequest{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetRemoteMappingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetRemoteMappingRequest) ProtoMessage() {}
+
+func (x *ResetRemoteMappingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetRemoteMappingRequest.ProtoReflect.Descriptor instead.
+func (*ResetRemoteMappingRequest) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{20}
+}
+
+type ResetRemoteMappingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bindings      []*RemoteBinding       `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetRemoteMappingResponse) Reset() {
+	*x = ResetRemoteMappingResponse{}
+	mi := &file_vigo_home_v1_home_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetRemoteMappingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetRemoteMappingResponse) ProtoMessage() {}
+
+func (x *ResetRemoteMappingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_home_v1_home_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetRemoteMappingResponse.ProtoReflect.Descriptor instead.
+func (*ResetRemoteMappingResponse) Descriptor() ([]byte, []int) {
+	return file_vigo_home_v1_home_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ResetRemoteMappingResponse) GetBindings() []*RemoteBinding {
+	if x != nil {
+		return x.Bindings
+	}
+	return nil
+}
+
 var File_vigo_home_v1_home_proto protoreflect.FileDescriptor
 
 const file_vigo_home_v1_home_proto_rawDesc = "" +
@@ -863,7 +1461,29 @@ const file_vigo_home_v1_home_proto_rawDesc = "" +
 	"\x13ResetPairingRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\"H\n" +
 	"\x14ResetPairingResponse\x120\n" +
-	"\x05group\x18\x01 \x01(\v2\x1a.vigo.home.v1.PairingGroupR\x05group*O\n" +
+	"\x05group\x18\x01 \x01(\v2\x1a.vigo.home.v1.PairingGroupR\x05group\"b\n" +
+	"\fRemoteTarget\x12\x12\n" +
+	"\x03key\x18\x01 \x01(\tH\x00R\x03key\x124\n" +
+	"\x06action\x18\x02 \x01(\x0e2\x1a.vigo.home.v1.RemoteActionH\x00R\x06actionB\b\n" +
+	"\x06target\"\x8b\x01\n" +
+	"\rRemoteBinding\x122\n" +
+	"\x06button\x18\x01 \x01(\x0e2\x1a.vigo.home.v1.RemoteButtonR\x06button\x122\n" +
+	"\x06target\x18\x02 \x01(\v2\x1a.vigo.home.v1.RemoteTargetR\x06targetJ\x04\b\x03\x10\x04R\fshown_by_ios\"O\n" +
+	"\tKeyOption\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1a\n" +
+	"\bverified\x18\x03 \x01(\bR\bverified\"\x19\n" +
+	"\x17GetRemoteMappingRequest\"\x80\x01\n" +
+	"\x18GetRemoteMappingResponse\x127\n" +
+	"\bbindings\x18\x01 \x03(\v2\x1b.vigo.home.v1.RemoteBindingR\bbindings\x12+\n" +
+	"\x04keys\x18\x02 \x03(\v2\x17.vigo.home.v1.KeyOptionR\x04keys\"U\n" +
+	"\x1aUpdateRemoteMappingRequest\x127\n" +
+	"\bbindings\x18\x01 \x03(\v2\x1b.vigo.home.v1.RemoteBindingR\bbindings\"V\n" +
+	"\x1bUpdateRemoteMappingResponse\x127\n" +
+	"\bbindings\x18\x01 \x03(\v2\x1b.vigo.home.v1.RemoteBindingR\bbindings\"\x1b\n" +
+	"\x19ResetRemoteMappingRequest\"U\n" +
+	"\x1aResetRemoteMappingResponse\x127\n" +
+	"\bbindings\x18\x01 \x03(\v2\x1b.vigo.home.v1.RemoteBindingR\bbindings*O\n" +
 	"\bProtocol\x12\x18\n" +
 	"\x14PROTOCOL_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10PROTOCOL_HOMEKIT\x10\x01\x12\x13\n" +
@@ -872,13 +1492,36 @@ const file_vigo_home_v1_home_proto_rawDesc = "" +
 	"\x1aACCESSORY_KIND_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19ACCESSORY_KIND_TELEVISION\x10\x01\x12\x19\n" +
 	"\x15ACCESSORY_KIND_SWITCH\x10\x02\x12\x1c\n" +
-	"\x18ACCESSORY_KIND_LIGHTBULB\x10\x032\xea\x03\n" +
+	"\x18ACCESSORY_KIND_LIGHTBULB\x10\x03*\xa4\x04\n" +
+	"\fRemoteButton\x12\x1d\n" +
+	"\x19REMOTE_BUTTON_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16REMOTE_BUTTON_ARROW_UP\x10\x01\x12\x1c\n" +
+	"\x18REMOTE_BUTTON_ARROW_DOWN\x10\x02\x12\x1c\n" +
+	"\x18REMOTE_BUTTON_ARROW_LEFT\x10\x03\x12\x1d\n" +
+	"\x19REMOTE_BUTTON_ARROW_RIGHT\x10\x04\x12\x18\n" +
+	"\x14REMOTE_BUTTON_SELECT\x10\x05\x12\x16\n" +
+	"\x12REMOTE_BUTTON_BACK\x10\x06\x12\x1c\n" +
+	"\x18REMOTE_BUTTON_PLAY_PAUSE\x10\a\x12\x1d\n" +
+	"\x19REMOTE_BUTTON_INFORMATION\x10\b\x12\x1b\n" +
+	"\x17REMOTE_BUTTON_VOLUME_UP\x10\x0e\x12\x1d\n" +
+	"\x19REMOTE_BUTTON_VOLUME_DOWN\x10\x0f\x12\x16\n" +
+	"\x12REMOTE_BUTTON_MUTE\x10\x10\x12\x1a\n" +
+	"\x16REMOTE_BUTTON_POWER_ON\x10\x11\x12\x1b\n" +
+	"\x17REMOTE_BUTTON_POWER_OFF\x10\x12\"\x04\b\t\x10\r*\x12REMOTE_BUTTON_EXIT*\x14REMOTE_BUTTON_REWIND*\x1aREMOTE_BUTTON_FAST_FORWARD*\x18REMOTE_BUTTON_NEXT_TRACK*\x1cREMOTE_BUTTON_PREVIOUS_TRACK*\x84\x01\n" +
+	"\fRemoteAction\x12\x1d\n" +
+	"\x19REMOTE_ACTION_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12REMOTE_ACTION_NONE\x10\x01\x12!\n" +
+	"\x1dREMOTE_ACTION_TOGGLE_ART_MODE\x10\x02\x12\x1a\n" +
+	"\x16REMOTE_ACTION_SHOW_ART\x10\x032\xa2\x06\n" +
 	"\vHomeService\x12R\n" +
 	"\vGetProvider\x12 .vigo.home.v1.GetProviderRequest\x1a!.vigo.home.v1.GetProviderResponse\x12^\n" +
 	"\x0fListAccessories\x12$.vigo.home.v1.ListAccessoriesRequest\x1a%.vigo.home.v1.ListAccessoriesResponse\x12j\n" +
 	"\x13SetAccessoryEnabled\x12(.vigo.home.v1.SetAccessoryEnabledRequest\x1a).vigo.home.v1.SetAccessoryEnabledResponse\x12d\n" +
 	"\x11ListPairingGroups\x12&.vigo.home.v1.ListPairingGroupsRequest\x1a'.vigo.home.v1.ListPairingGroupsResponse\x12U\n" +
-	"\fResetPairing\x12!.vigo.home.v1.ResetPairingRequest\x1a\".vigo.home.v1.ResetPairingResponseB2Z0github.com/yuha0/vigo/gen/go/vigo/home/v1;homev1b\x06proto3"
+	"\fResetPairing\x12!.vigo.home.v1.ResetPairingRequest\x1a\".vigo.home.v1.ResetPairingResponse\x12a\n" +
+	"\x10GetRemoteMapping\x12%.vigo.home.v1.GetRemoteMappingRequest\x1a&.vigo.home.v1.GetRemoteMappingResponse\x12j\n" +
+	"\x13UpdateRemoteMapping\x12(.vigo.home.v1.UpdateRemoteMappingRequest\x1a).vigo.home.v1.UpdateRemoteMappingResponse\x12g\n" +
+	"\x12ResetRemoteMapping\x12'.vigo.home.v1.ResetRemoteMappingRequest\x1a(.vigo.home.v1.ResetRemoteMappingResponseB2Z0github.com/yuha0/vigo/gen/go/vigo/home/v1;homev1b\x06proto3"
 
 var (
 	file_vigo_home_v1_home_proto_rawDescOnce sync.Once
@@ -892,48 +1535,73 @@ func file_vigo_home_v1_home_proto_rawDescGZIP() []byte {
 	return file_vigo_home_v1_home_proto_rawDescData
 }
 
-var file_vigo_home_v1_home_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_vigo_home_v1_home_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_vigo_home_v1_home_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_vigo_home_v1_home_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_vigo_home_v1_home_proto_goTypes = []any{
 	(Protocol)(0),                       // 0: vigo.home.v1.Protocol
 	(AccessoryKind)(0),                  // 1: vigo.home.v1.AccessoryKind
-	(*Provider)(nil),                    // 2: vigo.home.v1.Provider
-	(*Accessory)(nil),                   // 3: vigo.home.v1.Accessory
-	(*PairingGroup)(nil),                // 4: vigo.home.v1.PairingGroup
-	(*GetProviderRequest)(nil),          // 5: vigo.home.v1.GetProviderRequest
-	(*GetProviderResponse)(nil),         // 6: vigo.home.v1.GetProviderResponse
-	(*ListAccessoriesRequest)(nil),      // 7: vigo.home.v1.ListAccessoriesRequest
-	(*ListAccessoriesResponse)(nil),     // 8: vigo.home.v1.ListAccessoriesResponse
-	(*SetAccessoryEnabledRequest)(nil),  // 9: vigo.home.v1.SetAccessoryEnabledRequest
-	(*SetAccessoryEnabledResponse)(nil), // 10: vigo.home.v1.SetAccessoryEnabledResponse
-	(*ListPairingGroupsRequest)(nil),    // 11: vigo.home.v1.ListPairingGroupsRequest
-	(*ListPairingGroupsResponse)(nil),   // 12: vigo.home.v1.ListPairingGroupsResponse
-	(*ResetPairingRequest)(nil),         // 13: vigo.home.v1.ResetPairingRequest
-	(*ResetPairingResponse)(nil),        // 14: vigo.home.v1.ResetPairingResponse
+	(RemoteButton)(0),                   // 2: vigo.home.v1.RemoteButton
+	(RemoteAction)(0),                   // 3: vigo.home.v1.RemoteAction
+	(*Provider)(nil),                    // 4: vigo.home.v1.Provider
+	(*Accessory)(nil),                   // 5: vigo.home.v1.Accessory
+	(*PairingGroup)(nil),                // 6: vigo.home.v1.PairingGroup
+	(*GetProviderRequest)(nil),          // 7: vigo.home.v1.GetProviderRequest
+	(*GetProviderResponse)(nil),         // 8: vigo.home.v1.GetProviderResponse
+	(*ListAccessoriesRequest)(nil),      // 9: vigo.home.v1.ListAccessoriesRequest
+	(*ListAccessoriesResponse)(nil),     // 10: vigo.home.v1.ListAccessoriesResponse
+	(*SetAccessoryEnabledRequest)(nil),  // 11: vigo.home.v1.SetAccessoryEnabledRequest
+	(*SetAccessoryEnabledResponse)(nil), // 12: vigo.home.v1.SetAccessoryEnabledResponse
+	(*ListPairingGroupsRequest)(nil),    // 13: vigo.home.v1.ListPairingGroupsRequest
+	(*ListPairingGroupsResponse)(nil),   // 14: vigo.home.v1.ListPairingGroupsResponse
+	(*ResetPairingRequest)(nil),         // 15: vigo.home.v1.ResetPairingRequest
+	(*ResetPairingResponse)(nil),        // 16: vigo.home.v1.ResetPairingResponse
+	(*RemoteTarget)(nil),                // 17: vigo.home.v1.RemoteTarget
+	(*RemoteBinding)(nil),               // 18: vigo.home.v1.RemoteBinding
+	(*KeyOption)(nil),                   // 19: vigo.home.v1.KeyOption
+	(*GetRemoteMappingRequest)(nil),     // 20: vigo.home.v1.GetRemoteMappingRequest
+	(*GetRemoteMappingResponse)(nil),    // 21: vigo.home.v1.GetRemoteMappingResponse
+	(*UpdateRemoteMappingRequest)(nil),  // 22: vigo.home.v1.UpdateRemoteMappingRequest
+	(*UpdateRemoteMappingResponse)(nil), // 23: vigo.home.v1.UpdateRemoteMappingResponse
+	(*ResetRemoteMappingRequest)(nil),   // 24: vigo.home.v1.ResetRemoteMappingRequest
+	(*ResetRemoteMappingResponse)(nil),  // 25: vigo.home.v1.ResetRemoteMappingResponse
 }
 var file_vigo_home_v1_home_proto_depIdxs = []int32{
 	0,  // 0: vigo.home.v1.Provider.protocol:type_name -> vigo.home.v1.Protocol
 	1,  // 1: vigo.home.v1.Accessory.kind:type_name -> vigo.home.v1.AccessoryKind
-	2,  // 2: vigo.home.v1.GetProviderResponse.provider:type_name -> vigo.home.v1.Provider
-	3,  // 3: vigo.home.v1.ListAccessoriesResponse.accessories:type_name -> vigo.home.v1.Accessory
-	3,  // 4: vigo.home.v1.SetAccessoryEnabledResponse.accessory:type_name -> vigo.home.v1.Accessory
-	4,  // 5: vigo.home.v1.ListPairingGroupsResponse.groups:type_name -> vigo.home.v1.PairingGroup
-	4,  // 6: vigo.home.v1.ResetPairingResponse.group:type_name -> vigo.home.v1.PairingGroup
-	5,  // 7: vigo.home.v1.HomeService.GetProvider:input_type -> vigo.home.v1.GetProviderRequest
-	7,  // 8: vigo.home.v1.HomeService.ListAccessories:input_type -> vigo.home.v1.ListAccessoriesRequest
-	9,  // 9: vigo.home.v1.HomeService.SetAccessoryEnabled:input_type -> vigo.home.v1.SetAccessoryEnabledRequest
-	11, // 10: vigo.home.v1.HomeService.ListPairingGroups:input_type -> vigo.home.v1.ListPairingGroupsRequest
-	13, // 11: vigo.home.v1.HomeService.ResetPairing:input_type -> vigo.home.v1.ResetPairingRequest
-	6,  // 12: vigo.home.v1.HomeService.GetProvider:output_type -> vigo.home.v1.GetProviderResponse
-	8,  // 13: vigo.home.v1.HomeService.ListAccessories:output_type -> vigo.home.v1.ListAccessoriesResponse
-	10, // 14: vigo.home.v1.HomeService.SetAccessoryEnabled:output_type -> vigo.home.v1.SetAccessoryEnabledResponse
-	12, // 15: vigo.home.v1.HomeService.ListPairingGroups:output_type -> vigo.home.v1.ListPairingGroupsResponse
-	14, // 16: vigo.home.v1.HomeService.ResetPairing:output_type -> vigo.home.v1.ResetPairingResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	4,  // 2: vigo.home.v1.GetProviderResponse.provider:type_name -> vigo.home.v1.Provider
+	5,  // 3: vigo.home.v1.ListAccessoriesResponse.accessories:type_name -> vigo.home.v1.Accessory
+	5,  // 4: vigo.home.v1.SetAccessoryEnabledResponse.accessory:type_name -> vigo.home.v1.Accessory
+	6,  // 5: vigo.home.v1.ListPairingGroupsResponse.groups:type_name -> vigo.home.v1.PairingGroup
+	6,  // 6: vigo.home.v1.ResetPairingResponse.group:type_name -> vigo.home.v1.PairingGroup
+	3,  // 7: vigo.home.v1.RemoteTarget.action:type_name -> vigo.home.v1.RemoteAction
+	2,  // 8: vigo.home.v1.RemoteBinding.button:type_name -> vigo.home.v1.RemoteButton
+	17, // 9: vigo.home.v1.RemoteBinding.target:type_name -> vigo.home.v1.RemoteTarget
+	18, // 10: vigo.home.v1.GetRemoteMappingResponse.bindings:type_name -> vigo.home.v1.RemoteBinding
+	19, // 11: vigo.home.v1.GetRemoteMappingResponse.keys:type_name -> vigo.home.v1.KeyOption
+	18, // 12: vigo.home.v1.UpdateRemoteMappingRequest.bindings:type_name -> vigo.home.v1.RemoteBinding
+	18, // 13: vigo.home.v1.UpdateRemoteMappingResponse.bindings:type_name -> vigo.home.v1.RemoteBinding
+	18, // 14: vigo.home.v1.ResetRemoteMappingResponse.bindings:type_name -> vigo.home.v1.RemoteBinding
+	7,  // 15: vigo.home.v1.HomeService.GetProvider:input_type -> vigo.home.v1.GetProviderRequest
+	9,  // 16: vigo.home.v1.HomeService.ListAccessories:input_type -> vigo.home.v1.ListAccessoriesRequest
+	11, // 17: vigo.home.v1.HomeService.SetAccessoryEnabled:input_type -> vigo.home.v1.SetAccessoryEnabledRequest
+	13, // 18: vigo.home.v1.HomeService.ListPairingGroups:input_type -> vigo.home.v1.ListPairingGroupsRequest
+	15, // 19: vigo.home.v1.HomeService.ResetPairing:input_type -> vigo.home.v1.ResetPairingRequest
+	20, // 20: vigo.home.v1.HomeService.GetRemoteMapping:input_type -> vigo.home.v1.GetRemoteMappingRequest
+	22, // 21: vigo.home.v1.HomeService.UpdateRemoteMapping:input_type -> vigo.home.v1.UpdateRemoteMappingRequest
+	24, // 22: vigo.home.v1.HomeService.ResetRemoteMapping:input_type -> vigo.home.v1.ResetRemoteMappingRequest
+	8,  // 23: vigo.home.v1.HomeService.GetProvider:output_type -> vigo.home.v1.GetProviderResponse
+	10, // 24: vigo.home.v1.HomeService.ListAccessories:output_type -> vigo.home.v1.ListAccessoriesResponse
+	12, // 25: vigo.home.v1.HomeService.SetAccessoryEnabled:output_type -> vigo.home.v1.SetAccessoryEnabledResponse
+	14, // 26: vigo.home.v1.HomeService.ListPairingGroups:output_type -> vigo.home.v1.ListPairingGroupsResponse
+	16, // 27: vigo.home.v1.HomeService.ResetPairing:output_type -> vigo.home.v1.ResetPairingResponse
+	21, // 28: vigo.home.v1.HomeService.GetRemoteMapping:output_type -> vigo.home.v1.GetRemoteMappingResponse
+	23, // 29: vigo.home.v1.HomeService.UpdateRemoteMapping:output_type -> vigo.home.v1.UpdateRemoteMappingResponse
+	25, // 30: vigo.home.v1.HomeService.ResetRemoteMapping:output_type -> vigo.home.v1.ResetRemoteMappingResponse
+	23, // [23:31] is the sub-list for method output_type
+	15, // [15:23] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_vigo_home_v1_home_proto_init() }
@@ -941,13 +1609,17 @@ func file_vigo_home_v1_home_proto_init() {
 	if File_vigo_home_v1_home_proto != nil {
 		return
 	}
+	file_vigo_home_v1_home_proto_msgTypes[13].OneofWrappers = []any{
+		(*RemoteTarget_Key)(nil),
+		(*RemoteTarget_Action)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_vigo_home_v1_home_proto_rawDesc), len(file_vigo_home_v1_home_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   13,
+			NumEnums:      4,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

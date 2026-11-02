@@ -1,7 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { HomeService, ListAccessoriesResponseSchema, type ListAccessoriesResponse, type ListPairingGroupsResponse } from "@/gen/vigo/home/v1/home_pb";
+import {
+  GetRemoteMappingResponseSchema,
+  HomeService,
+  ListAccessoriesResponseSchema,
+  type GetRemoteMappingResponse,
+  type ListAccessoriesResponse,
+  type ListPairingGroupsResponse,
+  type RemoteBinding,
+} from "@/gen/vigo/home/v1/home_pb";
 import { useClient } from "@/lib/backend";
 import { qk } from "@/lib/queries";
 
@@ -76,5 +84,57 @@ export function useResetPairing() {
       );
     },
     meta: { action: "Reset pairing" },
+  });
+}
+
+export function useRemoteMapping(enabled: boolean) {
+  const client = useClient(HomeService);
+  return useQuery({
+    queryKey: qk.homeRemote,
+    queryFn: ({ signal }) => client.getRemoteMapping({}, { signal }),
+    enabled,
+  });
+}
+
+function mergeBindings(old: GetRemoteMappingResponse, changed: RemoteBinding[]): GetRemoteMappingResponse {
+  const byButton = new Map(changed.map((b) => [b.button, b]));
+  return create(GetRemoteMappingResponseSchema, {
+    keys: old.keys,
+    bindings: old.bindings.map((b) => byButton.get(b.button) ?? b),
+  });
+}
+
+/** Saves one button's binding right away, showing it before the server answers. */
+export function useUpdateRemoteBinding() {
+  const client = useClient(HomeService);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (binding: RemoteBinding) => client.updateRemoteMapping({ bindings: [binding] }),
+    onMutate: async (binding) => {
+      await qc.cancelQueries({ queryKey: qk.homeRemote });
+      const prev = qc.getQueryData<GetRemoteMappingResponse>(qk.homeRemote);
+      if (prev) qc.setQueryData(qk.homeRemote, mergeBindings(prev, [binding]));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(qk.homeRemote, ctx.prev);
+    },
+    onSuccess: (res) => {
+      qc.setQueryData<GetRemoteMappingResponse>(qk.homeRemote, (old) => (old ? mergeBindings(old, res.bindings) : old));
+    },
+    meta: { action: "Change the button" },
+  });
+}
+
+export function useResetRemoteMapping() {
+  const client = useClient(HomeService);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => client.resetRemoteMapping({}),
+    onSuccess: (res) => {
+      qc.setQueryData<GetRemoteMappingResponse>(qk.homeRemote, (old) => (old ? mergeBindings(old, res.bindings) : old));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.homeRemote }),
+    meta: { action: "Reset the remote buttons" },
   });
 }

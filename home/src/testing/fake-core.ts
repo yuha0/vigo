@@ -47,7 +47,10 @@ export class FakeTV {
 
   readonly transport: Transport = createRouterTransport(({ service }) => {
     service(TVService, {
-      getStatus: () => ({ status: this.status }),
+      getStatus: () => {
+        this.record("getStatus", {});
+        return { status: this.status };
+      },
       watchEvents: (_req, ctx) => this.watch(ctx.signal),
       showArt: (req) => {
         this.record("showArt", req);

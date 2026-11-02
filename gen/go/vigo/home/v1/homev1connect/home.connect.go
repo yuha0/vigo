@@ -47,6 +47,15 @@ const (
 	// HomeServiceResetPairingProcedure is the fully-qualified name of the HomeService's ResetPairing
 	// RPC.
 	HomeServiceResetPairingProcedure = "/vigo.home.v1.HomeService/ResetPairing"
+	// HomeServiceGetRemoteMappingProcedure is the fully-qualified name of the HomeService's
+	// GetRemoteMapping RPC.
+	HomeServiceGetRemoteMappingProcedure = "/vigo.home.v1.HomeService/GetRemoteMapping"
+	// HomeServiceUpdateRemoteMappingProcedure is the fully-qualified name of the HomeService's
+	// UpdateRemoteMapping RPC.
+	HomeServiceUpdateRemoteMappingProcedure = "/vigo.home.v1.HomeService/UpdateRemoteMapping"
+	// HomeServiceResetRemoteMappingProcedure is the fully-qualified name of the HomeService's
+	// ResetRemoteMapping RPC.
+	HomeServiceResetRemoteMappingProcedure = "/vigo.home.v1.HomeService/ResetRemoteMapping"
 )
 
 // HomeServiceClient is a client for the vigo.home.v1.HomeService service.
@@ -58,6 +67,13 @@ type HomeServiceClient interface {
 	// Forgets all controllers paired to the group and issues a new setup code.
 	// The accessories disappear from Apple Home and must be re-added by hand.
 	ResetPairing(context.Context, *connect.Request[v1.ResetPairingRequest]) (*connect.Response[v1.ResetPairingResponse], error)
+	// What each button of the iOS remote (Control Center) does. Apple draws the
+	// remote, so buttons cannot be added or removed, only remapped.
+	GetRemoteMapping(context.Context, *connect.Request[v1.GetRemoteMappingRequest]) (*connect.Response[v1.GetRemoteMappingResponse], error)
+	// Replaces the bindings for the given buttons; other buttons keep theirs.
+	UpdateRemoteMapping(context.Context, *connect.Request[v1.UpdateRemoteMappingRequest]) (*connect.Response[v1.UpdateRemoteMappingResponse], error)
+	// Restores the default bindings for every button.
+	ResetRemoteMapping(context.Context, *connect.Request[v1.ResetRemoteMappingRequest]) (*connect.Response[v1.ResetRemoteMappingResponse], error)
 }
 
 // NewHomeServiceClient constructs a client for the vigo.home.v1.HomeService service. By default, it
@@ -101,6 +117,24 @@ func NewHomeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(homeServiceMethods.ByName("ResetPairing")),
 			connect.WithClientOptions(opts...),
 		),
+		getRemoteMapping: connect.NewClient[v1.GetRemoteMappingRequest, v1.GetRemoteMappingResponse](
+			httpClient,
+			baseURL+HomeServiceGetRemoteMappingProcedure,
+			connect.WithSchema(homeServiceMethods.ByName("GetRemoteMapping")),
+			connect.WithClientOptions(opts...),
+		),
+		updateRemoteMapping: connect.NewClient[v1.UpdateRemoteMappingRequest, v1.UpdateRemoteMappingResponse](
+			httpClient,
+			baseURL+HomeServiceUpdateRemoteMappingProcedure,
+			connect.WithSchema(homeServiceMethods.ByName("UpdateRemoteMapping")),
+			connect.WithClientOptions(opts...),
+		),
+		resetRemoteMapping: connect.NewClient[v1.ResetRemoteMappingRequest, v1.ResetRemoteMappingResponse](
+			httpClient,
+			baseURL+HomeServiceResetRemoteMappingProcedure,
+			connect.WithSchema(homeServiceMethods.ByName("ResetRemoteMapping")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -111,6 +145,9 @@ type homeServiceClient struct {
 	setAccessoryEnabled *connect.Client[v1.SetAccessoryEnabledRequest, v1.SetAccessoryEnabledResponse]
 	listPairingGroups   *connect.Client[v1.ListPairingGroupsRequest, v1.ListPairingGroupsResponse]
 	resetPairing        *connect.Client[v1.ResetPairingRequest, v1.ResetPairingResponse]
+	getRemoteMapping    *connect.Client[v1.GetRemoteMappingRequest, v1.GetRemoteMappingResponse]
+	updateRemoteMapping *connect.Client[v1.UpdateRemoteMappingRequest, v1.UpdateRemoteMappingResponse]
+	resetRemoteMapping  *connect.Client[v1.ResetRemoteMappingRequest, v1.ResetRemoteMappingResponse]
 }
 
 // GetProvider calls vigo.home.v1.HomeService.GetProvider.
@@ -138,6 +175,21 @@ func (c *homeServiceClient) ResetPairing(ctx context.Context, req *connect.Reque
 	return c.resetPairing.CallUnary(ctx, req)
 }
 
+// GetRemoteMapping calls vigo.home.v1.HomeService.GetRemoteMapping.
+func (c *homeServiceClient) GetRemoteMapping(ctx context.Context, req *connect.Request[v1.GetRemoteMappingRequest]) (*connect.Response[v1.GetRemoteMappingResponse], error) {
+	return c.getRemoteMapping.CallUnary(ctx, req)
+}
+
+// UpdateRemoteMapping calls vigo.home.v1.HomeService.UpdateRemoteMapping.
+func (c *homeServiceClient) UpdateRemoteMapping(ctx context.Context, req *connect.Request[v1.UpdateRemoteMappingRequest]) (*connect.Response[v1.UpdateRemoteMappingResponse], error) {
+	return c.updateRemoteMapping.CallUnary(ctx, req)
+}
+
+// ResetRemoteMapping calls vigo.home.v1.HomeService.ResetRemoteMapping.
+func (c *homeServiceClient) ResetRemoteMapping(ctx context.Context, req *connect.Request[v1.ResetRemoteMappingRequest]) (*connect.Response[v1.ResetRemoteMappingResponse], error) {
+	return c.resetRemoteMapping.CallUnary(ctx, req)
+}
+
 // HomeServiceHandler is an implementation of the vigo.home.v1.HomeService service.
 type HomeServiceHandler interface {
 	GetProvider(context.Context, *connect.Request[v1.GetProviderRequest]) (*connect.Response[v1.GetProviderResponse], error)
@@ -147,6 +199,13 @@ type HomeServiceHandler interface {
 	// Forgets all controllers paired to the group and issues a new setup code.
 	// The accessories disappear from Apple Home and must be re-added by hand.
 	ResetPairing(context.Context, *connect.Request[v1.ResetPairingRequest]) (*connect.Response[v1.ResetPairingResponse], error)
+	// What each button of the iOS remote (Control Center) does. Apple draws the
+	// remote, so buttons cannot be added or removed, only remapped.
+	GetRemoteMapping(context.Context, *connect.Request[v1.GetRemoteMappingRequest]) (*connect.Response[v1.GetRemoteMappingResponse], error)
+	// Replaces the bindings for the given buttons; other buttons keep theirs.
+	UpdateRemoteMapping(context.Context, *connect.Request[v1.UpdateRemoteMappingRequest]) (*connect.Response[v1.UpdateRemoteMappingResponse], error)
+	// Restores the default bindings for every button.
+	ResetRemoteMapping(context.Context, *connect.Request[v1.ResetRemoteMappingRequest]) (*connect.Response[v1.ResetRemoteMappingResponse], error)
 }
 
 // NewHomeServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -186,6 +245,24 @@ func NewHomeServiceHandler(svc HomeServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(homeServiceMethods.ByName("ResetPairing")),
 		connect.WithHandlerOptions(opts...),
 	)
+	homeServiceGetRemoteMappingHandler := connect.NewUnaryHandler(
+		HomeServiceGetRemoteMappingProcedure,
+		svc.GetRemoteMapping,
+		connect.WithSchema(homeServiceMethods.ByName("GetRemoteMapping")),
+		connect.WithHandlerOptions(opts...),
+	)
+	homeServiceUpdateRemoteMappingHandler := connect.NewUnaryHandler(
+		HomeServiceUpdateRemoteMappingProcedure,
+		svc.UpdateRemoteMapping,
+		connect.WithSchema(homeServiceMethods.ByName("UpdateRemoteMapping")),
+		connect.WithHandlerOptions(opts...),
+	)
+	homeServiceResetRemoteMappingHandler := connect.NewUnaryHandler(
+		HomeServiceResetRemoteMappingProcedure,
+		svc.ResetRemoteMapping,
+		connect.WithSchema(homeServiceMethods.ByName("ResetRemoteMapping")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/vigo.home.v1.HomeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case HomeServiceGetProviderProcedure:
@@ -198,6 +275,12 @@ func NewHomeServiceHandler(svc HomeServiceHandler, opts ...connect.HandlerOption
 			homeServiceListPairingGroupsHandler.ServeHTTP(w, r)
 		case HomeServiceResetPairingProcedure:
 			homeServiceResetPairingHandler.ServeHTTP(w, r)
+		case HomeServiceGetRemoteMappingProcedure:
+			homeServiceGetRemoteMappingHandler.ServeHTTP(w, r)
+		case HomeServiceUpdateRemoteMappingProcedure:
+			homeServiceUpdateRemoteMappingHandler.ServeHTTP(w, r)
+		case HomeServiceResetRemoteMappingProcedure:
+			homeServiceResetRemoteMappingHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -225,4 +308,16 @@ func (UnimplementedHomeServiceHandler) ListPairingGroups(context.Context, *conne
 
 func (UnimplementedHomeServiceHandler) ResetPairing(context.Context, *connect.Request[v1.ResetPairingRequest]) (*connect.Response[v1.ResetPairingResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.home.v1.HomeService.ResetPairing is not implemented"))
+}
+
+func (UnimplementedHomeServiceHandler) GetRemoteMapping(context.Context, *connect.Request[v1.GetRemoteMappingRequest]) (*connect.Response[v1.GetRemoteMappingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.home.v1.HomeService.GetRemoteMapping is not implemented"))
+}
+
+func (UnimplementedHomeServiceHandler) UpdateRemoteMapping(context.Context, *connect.Request[v1.UpdateRemoteMappingRequest]) (*connect.Response[v1.UpdateRemoteMappingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.home.v1.HomeService.UpdateRemoteMapping is not implemented"))
+}
+
+func (UnimplementedHomeServiceHandler) ResetRemoteMapping(context.Context, *connect.Request[v1.ResetRemoteMappingRequest]) (*connect.Response[v1.ResetRemoteMappingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.home.v1.HomeService.ResetRemoteMapping is not implemented"))
 }

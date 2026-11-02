@@ -264,6 +264,18 @@ export function createMockBackend(options: MockBackendOptions = {}): MockBackend
         await wait();
         return { groups: home.listGroups() };
       },
+      async getRemoteMapping() {
+        await wait();
+        return home.remoteMapping();
+      },
+      async updateRemoteMapping(req) {
+        await wait();
+        return { bindings: home.updateRemoteMapping(req.bindings) };
+      },
+      async resetRemoteMapping() {
+        await wait();
+        return { bindings: home.resetRemoteMapping() };
+      },
       async resetPairing(req) {
         await wait();
         return { group: home.reset(req.groupId) };

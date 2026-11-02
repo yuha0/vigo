@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file vigo/home/v1/home.proto.
  */
 export const file_vigo_home_v1_home: GenFile = /*@__PURE__*/
-  fileDesc("Chd2aWdvL2hvbWUvdjEvaG9tZS5wcm90bxIMdmlnby5ob21lLnYxIoIBCghQcm92aWRlchIoCghwcm90b2NvbBgBIAEoDjIWLnZpZ28uaG9tZS52MS5Qcm90b2NvbBITCgtpbXBsZW1lbnRlZBgCIAEoCBIOCgZsZWFkZXIYAyABKAgSDwoHcmVwbGljYRgEIAEoCRIWCg5jb3JlX2Nvbm5lY3RlZBgFIAEoCCKlAQoJQWNjZXNzb3J5EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSKQoEa2luZBgEIAEoDjIbLnZpZ28uaG9tZS52MS5BY2Nlc3NvcnlLaW5kEg8KB2VuYWJsZWQYBSABKAgSEwoLY2FuX2Rpc2FibGUYBiABKAgSGAoQcGFpcmluZ19ncm91cF9pZBgHIAEoCSKKAQoMUGFpcmluZ0dyb3VwEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEgoKYWR2ZXJ0aXNlZBgDIAEoCBIOCgZwYWlyZWQYBCABKAgSEgoKc2V0dXBfY29kZRgFIAEoCRIRCglzZXR1cF91cmkYBiABKAkSFQoNYWNjZXNzb3J5X2lkcxgHIAMoCSIUChJHZXRQcm92aWRlclJlcXVlc3QiPwoTR2V0UHJvdmlkZXJSZXNwb25zZRIoCghwcm92aWRlchgBIAEoCzIWLnZpZ28uaG9tZS52MS5Qcm92aWRlciIYChZMaXN0QWNjZXNzb3JpZXNSZXF1ZXN0IkcKF0xpc3RBY2Nlc3Nvcmllc1Jlc3BvbnNlEiwKC2FjY2Vzc29yaWVzGAEgAygLMhcudmlnby5ob21lLnYxLkFjY2Vzc29yeSI5ChpTZXRBY2Nlc3NvcnlFbmFibGVkUmVxdWVzdBIKCgJpZBgBIAEoCRIPCgdlbmFibGVkGAIgASgIIkkKG1NldEFjY2Vzc29yeUVuYWJsZWRSZXNwb25zZRIqCglhY2Nlc3NvcnkYASABKAsyFy52aWdvLmhvbWUudjEuQWNjZXNzb3J5IhoKGExpc3RQYWlyaW5nR3JvdXBzUmVxdWVzdCJHChlMaXN0UGFpcmluZ0dyb3Vwc1Jlc3BvbnNlEioKBmdyb3VwcxgBIAMoCzIaLnZpZ28uaG9tZS52MS5QYWlyaW5nR3JvdXAiJwoTUmVzZXRQYWlyaW5nUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCSJBChRSZXNldFBhaXJpbmdSZXNwb25zZRIpCgVncm91cBgBIAEoCzIaLnZpZ28uaG9tZS52MS5QYWlyaW5nR3JvdXAqTwoIUHJvdG9jb2wSGAoUUFJPVE9DT0xfVU5TUEVDSUZJRUQQABIUChBQUk9UT0NPTF9IT01FS0lUEAESEwoPUFJPVE9DT0xfTUFUVEVSEAIqhwEKDUFjY2Vzc29yeUtpbmQSHgoaQUNDRVNTT1JZX0tJTkRfVU5TUEVDSUZJRUQQABIdChlBQ0NFU1NPUllfS0lORF9URUxFVklTSU9OEAESGQoVQUNDRVNTT1JZX0tJTkRfU1dJVENIEAISHAoYQUNDRVNTT1JZX0tJTkRfTElHSFRCVUxCEAMy6gMKC0hvbWVTZXJ2aWNlElIKC0dldFByb3ZpZGVyEiAudmlnby5ob21lLnYxLkdldFByb3ZpZGVyUmVxdWVzdBohLnZpZ28uaG9tZS52MS5HZXRQcm92aWRlclJlc3BvbnNlEl4KD0xpc3RBY2Nlc3NvcmllcxIkLnZpZ28uaG9tZS52MS5MaXN0QWNjZXNzb3JpZXNSZXF1ZXN0GiUudmlnby5ob21lLnYxLkxpc3RBY2Nlc3Nvcmllc1Jlc3BvbnNlEmoKE1NldEFjY2Vzc29yeUVuYWJsZWQSKC52aWdvLmhvbWUudjEuU2V0QWNjZXNzb3J5RW5hYmxlZFJlcXVlc3QaKS52aWdvLmhvbWUudjEuU2V0QWNjZXNzb3J5RW5hYmxlZFJlc3BvbnNlEmQKEUxpc3RQYWlyaW5nR3JvdXBzEiYudmlnby5ob21lLnYxLkxpc3RQYWlyaW5nR3JvdXBzUmVxdWVzdBonLnZpZ28uaG9tZS52MS5MaXN0UGFpcmluZ0dyb3Vwc1Jlc3BvbnNlElUKDFJlc2V0UGFpcmluZxIhLnZpZ28uaG9tZS52MS5SZXNldFBhaXJpbmdSZXF1ZXN0GiIudmlnby5ob21lLnYxLlJlc2V0UGFpcmluZ1Jlc3BvbnNlQjJaMGdpdGh1Yi5jb20veXVoYTAvdmlnby9nZW4vZ28vdmlnby9ob21lL3YxO2hvbWV2MWIGcHJvdG8z");
+  fileDesc("Chd2aWdvL2hvbWUvdjEvaG9tZS5wcm90bxIMdmlnby5ob21lLnYxIoIBCghQcm92aWRlchIoCghwcm90b2NvbBgBIAEoDjIWLnZpZ28uaG9tZS52MS5Qcm90b2NvbBITCgtpbXBsZW1lbnRlZBgCIAEoCBIOCgZsZWFkZXIYAyABKAgSDwoHcmVwbGljYRgEIAEoCRIWCg5jb3JlX2Nvbm5lY3RlZBgFIAEoCCKlAQoJQWNjZXNzb3J5EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSKQoEa2luZBgEIAEoDjIbLnZpZ28uaG9tZS52MS5BY2Nlc3NvcnlLaW5kEg8KB2VuYWJsZWQYBSABKAgSEwoLY2FuX2Rpc2FibGUYBiABKAgSGAoQcGFpcmluZ19ncm91cF9pZBgHIAEoCSKKAQoMUGFpcmluZ0dyb3VwEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEgoKYWR2ZXJ0aXNlZBgDIAEoCBIOCgZwYWlyZWQYBCABKAgSEgoKc2V0dXBfY29kZRgFIAEoCRIRCglzZXR1cF91cmkYBiABKAkSFQoNYWNjZXNzb3J5X2lkcxgHIAMoCSIUChJHZXRQcm92aWRlclJlcXVlc3QiPwoTR2V0UHJvdmlkZXJSZXNwb25zZRIoCghwcm92aWRlchgBIAEoCzIWLnZpZ28uaG9tZS52MS5Qcm92aWRlciIYChZMaXN0QWNjZXNzb3JpZXNSZXF1ZXN0IkcKF0xpc3RBY2Nlc3Nvcmllc1Jlc3BvbnNlEiwKC2FjY2Vzc29yaWVzGAEgAygLMhcudmlnby5ob21lLnYxLkFjY2Vzc29yeSI5ChpTZXRBY2Nlc3NvcnlFbmFibGVkUmVxdWVzdBIKCgJpZBgBIAEoCRIPCgdlbmFibGVkGAIgASgIIkkKG1NldEFjY2Vzc29yeUVuYWJsZWRSZXNwb25zZRIqCglhY2Nlc3NvcnkYASABKAsyFy52aWdvLmhvbWUudjEuQWNjZXNzb3J5IhoKGExpc3RQYWlyaW5nR3JvdXBzUmVxdWVzdCJHChlMaXN0UGFpcmluZ0dyb3Vwc1Jlc3BvbnNlEioKBmdyb3VwcxgBIAMoCzIaLnZpZ28uaG9tZS52MS5QYWlyaW5nR3JvdXAiJwoTUmVzZXRQYWlyaW5nUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCSJBChRSZXNldFBhaXJpbmdSZXNwb25zZRIpCgVncm91cBgBIAEoCzIaLnZpZ28uaG9tZS52MS5QYWlyaW5nR3JvdXAiVQoMUmVtb3RlVGFyZ2V0Eg0KA2tleRgBIAEoCUgAEiwKBmFjdGlvbhgCIAEoDjIaLnZpZ28uaG9tZS52MS5SZW1vdGVBY3Rpb25IAEIICgZ0YXJnZXQiewoNUmVtb3RlQmluZGluZxIqCgZidXR0b24YASABKA4yGi52aWdvLmhvbWUudjEuUmVtb3RlQnV0dG9uEioKBnRhcmdldBgCIAEoCzIaLnZpZ28uaG9tZS52MS5SZW1vdGVUYXJnZXRKBAgDEARSDHNob3duX2J5X2lvcyI5CglLZXlPcHRpb24SCwoDa2V5GAEgASgJEg0KBWxhYmVsGAIgASgJEhAKCHZlcmlmaWVkGAMgASgIIhkKF0dldFJlbW90ZU1hcHBpbmdSZXF1ZXN0InAKGEdldFJlbW90ZU1hcHBpbmdSZXNwb25zZRItCghiaW5kaW5ncxgBIAMoCzIbLnZpZ28uaG9tZS52MS5SZW1vdGVCaW5kaW5nEiUKBGtleXMYAiADKAsyFy52aWdvLmhvbWUudjEuS2V5T3B0aW9uIksKGlVwZGF0ZVJlbW90ZU1hcHBpbmdSZXF1ZXN0Ei0KCGJpbmRpbmdzGAEgAygLMhsudmlnby5ob21lLnYxLlJlbW90ZUJpbmRpbmciTAobVXBkYXRlUmVtb3RlTWFwcGluZ1Jlc3BvbnNlEi0KCGJpbmRpbmdzGAEgAygLMhsudmlnby5ob21lLnYxLlJlbW90ZUJpbmRpbmciGwoZUmVzZXRSZW1vdGVNYXBwaW5nUmVxdWVzdCJLChpSZXNldFJlbW90ZU1hcHBpbmdSZXNwb25zZRItCghiaW5kaW5ncxgBIAMoCzIbLnZpZ28uaG9tZS52MS5SZW1vdGVCaW5kaW5nKk8KCFByb3RvY29sEhgKFFBST1RPQ09MX1VOU1BFQ0lGSUVEEAASFAoQUFJPVE9DT0xfSE9NRUtJVBABEhMKD1BST1RPQ09MX01BVFRFUhACKocBCg1BY2Nlc3NvcnlLaW5kEh4KGkFDQ0VTU09SWV9LSU5EX1VOU1BFQ0lGSUVEEAASHQoZQUNDRVNTT1JZX0tJTkRfVEVMRVZJU0lPThABEhkKFUFDQ0VTU09SWV9LSU5EX1NXSVRDSBACEhwKGEFDQ0VTU09SWV9LSU5EX0xJR0hUQlVMQhADKqQECgxSZW1vdGVCdXR0b24SHQoZUkVNT1RFX0JVVFRPTl9VTlNQRUNJRklFRBAAEhoKFlJFTU9URV9CVVRUT05fQVJST1dfVVAQARIcChhSRU1PVEVfQlVUVE9OX0FSUk9XX0RPV04QAhIcChhSRU1PVEVfQlVUVE9OX0FSUk9XX0xFRlQQAxIdChlSRU1PVEVfQlVUVE9OX0FSUk9XX1JJR0hUEAQSGAoUUkVNT1RFX0JVVFRPTl9TRUxFQ1QQBRIWChJSRU1PVEVfQlVUVE9OX0JBQ0sQBhIcChhSRU1PVEVfQlVUVE9OX1BMQVlfUEFVU0UQBxIdChlSRU1PVEVfQlVUVE9OX0lORk9STUFUSU9OEAgSGwoXUkVNT1RFX0JVVFRPTl9WT0xVTUVfVVAQDhIdChlSRU1PVEVfQlVUVE9OX1ZPTFVNRV9ET1dOEA8SFgoSUkVNT1RFX0JVVFRPTl9NVVRFEBASGgoWUkVNT1RFX0JVVFRPTl9QT1dFUl9PThAREhsKF1JFTU9URV9CVVRUT05fUE9XRVJfT0ZGEBIiBAgJEA0qElJFTU9URV9CVVRUT05fRVhJVCoUUkVNT1RFX0JVVFRPTl9SRVdJTkQqGlJFTU9URV9CVVRUT05fRkFTVF9GT1JXQVJEKhhSRU1PVEVfQlVUVE9OX05FWFRfVFJBQ0sqHFJFTU9URV9CVVRUT05fUFJFVklPVVNfVFJBQ0sqhAEKDFJlbW90ZUFjdGlvbhIdChlSRU1PVEVfQUNUSU9OX1VOU1BFQ0lGSUVEEAASFgoSUkVNT1RFX0FDVElPTl9OT05FEAESIQodUkVNT1RFX0FDVElPTl9UT0dHTEVfQVJUX01PREUQAhIaChZSRU1PVEVfQUNUSU9OX1NIT1dfQVJUEAMyogYKC0hvbWVTZXJ2aWNlElIKC0dldFByb3ZpZGVyEiAudmlnby5ob21lLnYxLkdldFByb3ZpZGVyUmVxdWVzdBohLnZpZ28uaG9tZS52MS5HZXRQcm92aWRlclJlc3BvbnNlEl4KD0xpc3RBY2Nlc3NvcmllcxIkLnZpZ28uaG9tZS52MS5MaXN0QWNjZXNzb3JpZXNSZXF1ZXN0GiUudmlnby5ob21lLnYxLkxpc3RBY2Nlc3Nvcmllc1Jlc3BvbnNlEmoKE1NldEFjY2Vzc29yeUVuYWJsZWQSKC52aWdvLmhvbWUudjEuU2V0QWNjZXNzb3J5RW5hYmxlZFJlcXVlc3QaKS52aWdvLmhvbWUudjEuU2V0QWNjZXNzb3J5RW5hYmxlZFJlc3BvbnNlEmQKEUxpc3RQYWlyaW5nR3JvdXBzEiYudmlnby5ob21lLnYxLkxpc3RQYWlyaW5nR3JvdXBzUmVxdWVzdBonLnZpZ28uaG9tZS52MS5MaXN0UGFpcmluZ0dyb3Vwc1Jlc3BvbnNlElUKDFJlc2V0UGFpcmluZxIhLnZpZ28uaG9tZS52MS5SZXNldFBhaXJpbmdSZXF1ZXN0GiIudmlnby5ob21lLnYxLlJlc2V0UGFpcmluZ1Jlc3BvbnNlEmEKEEdldFJlbW90ZU1hcHBpbmcSJS52aWdvLmhvbWUudjEuR2V0UmVtb3RlTWFwcGluZ1JlcXVlc3QaJi52aWdvLmhvbWUudjEuR2V0UmVtb3RlTWFwcGluZ1Jlc3BvbnNlEmoKE1VwZGF0ZVJlbW90ZU1hcHBpbmcSKC52aWdvLmhvbWUudjEuVXBkYXRlUmVtb3RlTWFwcGluZ1JlcXVlc3QaKS52aWdvLmhvbWUudjEuVXBkYXRlUmVtb3RlTWFwcGluZ1Jlc3BvbnNlEmcKElJlc2V0UmVtb3RlTWFwcGluZxInLnZpZ28uaG9tZS52MS5SZXNldFJlbW90ZU1hcHBpbmdSZXF1ZXN0Gigudmlnby5ob21lLnYxLlJlc2V0UmVtb3RlTWFwcGluZ1Jlc3BvbnNlQjJaMGdpdGh1Yi5jb20veXVoYTAvdmlnby9nZW4vZ28vdmlnby9ob21lL3YxO2hvbWV2MWIGcHJvdG8z");
 
 /**
  * @generated from message vigo.home.v1.Provider
@@ -325,6 +325,194 @@ export const ResetPairingResponseSchema: GenMessage<ResetPairingResponse> = /*@_
   messageDesc(file_vigo_home_v1_home, 12);
 
 /**
+ * @generated from message vigo.home.v1.RemoteTarget
+ */
+export type RemoteTarget = Message<"vigo.home.v1.RemoteTarget"> & {
+  /**
+   * @generated from oneof vigo.home.v1.RemoteTarget.target
+   */
+  target: {
+    /**
+     * A Samsung key code such as "KEY_MENU". KEY_POWER is never allowed.
+     *
+     * @generated from field: string key = 1;
+     */
+    value: string;
+    case: "key";
+  } | {
+    /**
+     * @generated from field: vigo.home.v1.RemoteAction action = 2;
+     */
+    value: RemoteAction;
+    case: "action";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message vigo.home.v1.RemoteTarget.
+ * Use `create(RemoteTargetSchema)` to create a new message.
+ */
+export const RemoteTargetSchema: GenMessage<RemoteTarget> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 13);
+
+/**
+ * @generated from message vigo.home.v1.RemoteBinding
+ */
+export type RemoteBinding = Message<"vigo.home.v1.RemoteBinding"> & {
+  /**
+   * @generated from field: vigo.home.v1.RemoteButton button = 1;
+   */
+  button: RemoteButton;
+
+  /**
+   * @generated from field: vigo.home.v1.RemoteTarget target = 2;
+   */
+  target?: RemoteTarget | undefined;
+};
+
+/**
+ * Describes the message vigo.home.v1.RemoteBinding.
+ * Use `create(RemoteBindingSchema)` to create a new message.
+ */
+export const RemoteBindingSchema: GenMessage<RemoteBinding> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 14);
+
+/**
+ * @generated from message vigo.home.v1.KeyOption
+ */
+export type KeyOption = Message<"vigo.home.v1.KeyOption"> & {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key: string;
+
+  /**
+   * Short human label, e.g. "Menu".
+   *
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * Verified to reach the tested TV; others are documented by the client
+   * library only.
+   *
+   * @generated from field: bool verified = 3;
+   */
+  verified: boolean;
+};
+
+/**
+ * Describes the message vigo.home.v1.KeyOption.
+ * Use `create(KeyOptionSchema)` to create a new message.
+ */
+export const KeyOptionSchema: GenMessage<KeyOption> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 15);
+
+/**
+ * @generated from message vigo.home.v1.GetRemoteMappingRequest
+ */
+export type GetRemoteMappingRequest = Message<"vigo.home.v1.GetRemoteMappingRequest"> & {
+};
+
+/**
+ * Describes the message vigo.home.v1.GetRemoteMappingRequest.
+ * Use `create(GetRemoteMappingRequestSchema)` to create a new message.
+ */
+export const GetRemoteMappingRequestSchema: GenMessage<GetRemoteMappingRequest> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 16);
+
+/**
+ * @generated from message vigo.home.v1.GetRemoteMappingResponse
+ */
+export type GetRemoteMappingResponse = Message<"vigo.home.v1.GetRemoteMappingResponse"> & {
+  /**
+   * One per RemoteButton, in display order.
+   *
+   * @generated from field: repeated vigo.home.v1.RemoteBinding bindings = 1;
+   */
+  bindings: RemoteBinding[];
+
+  /**
+   * Every key that may be bound.
+   *
+   * @generated from field: repeated vigo.home.v1.KeyOption keys = 2;
+   */
+  keys: KeyOption[];
+};
+
+/**
+ * Describes the message vigo.home.v1.GetRemoteMappingResponse.
+ * Use `create(GetRemoteMappingResponseSchema)` to create a new message.
+ */
+export const GetRemoteMappingResponseSchema: GenMessage<GetRemoteMappingResponse> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 17);
+
+/**
+ * @generated from message vigo.home.v1.UpdateRemoteMappingRequest
+ */
+export type UpdateRemoteMappingRequest = Message<"vigo.home.v1.UpdateRemoteMappingRequest"> & {
+  /**
+   * @generated from field: repeated vigo.home.v1.RemoteBinding bindings = 1;
+   */
+  bindings: RemoteBinding[];
+};
+
+/**
+ * Describes the message vigo.home.v1.UpdateRemoteMappingRequest.
+ * Use `create(UpdateRemoteMappingRequestSchema)` to create a new message.
+ */
+export const UpdateRemoteMappingRequestSchema: GenMessage<UpdateRemoteMappingRequest> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 18);
+
+/**
+ * @generated from message vigo.home.v1.UpdateRemoteMappingResponse
+ */
+export type UpdateRemoteMappingResponse = Message<"vigo.home.v1.UpdateRemoteMappingResponse"> & {
+  /**
+   * @generated from field: repeated vigo.home.v1.RemoteBinding bindings = 1;
+   */
+  bindings: RemoteBinding[];
+};
+
+/**
+ * Describes the message vigo.home.v1.UpdateRemoteMappingResponse.
+ * Use `create(UpdateRemoteMappingResponseSchema)` to create a new message.
+ */
+export const UpdateRemoteMappingResponseSchema: GenMessage<UpdateRemoteMappingResponse> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 19);
+
+/**
+ * @generated from message vigo.home.v1.ResetRemoteMappingRequest
+ */
+export type ResetRemoteMappingRequest = Message<"vigo.home.v1.ResetRemoteMappingRequest"> & {
+};
+
+/**
+ * Describes the message vigo.home.v1.ResetRemoteMappingRequest.
+ * Use `create(ResetRemoteMappingRequestSchema)` to create a new message.
+ */
+export const ResetRemoteMappingRequestSchema: GenMessage<ResetRemoteMappingRequest> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 20);
+
+/**
+ * @generated from message vigo.home.v1.ResetRemoteMappingResponse
+ */
+export type ResetRemoteMappingResponse = Message<"vigo.home.v1.ResetRemoteMappingResponse"> & {
+  /**
+   * @generated from field: repeated vigo.home.v1.RemoteBinding bindings = 1;
+   */
+  bindings: RemoteBinding[];
+};
+
+/**
+ * Describes the message vigo.home.v1.ResetRemoteMappingResponse.
+ * Use `create(ResetRemoteMappingResponseSchema)` to create a new message.
+ */
+export const ResetRemoteMappingResponseSchema: GenMessage<ResetRemoteMappingResponse> = /*@__PURE__*/
+  messageDesc(file_vigo_home_v1_home, 21);
+
+/**
  * @generated from enum vigo.home.v1.Protocol
  */
 export enum Protocol {
@@ -382,6 +570,132 @@ export const AccessoryKindSchema: GenEnum<AccessoryKind> = /*@__PURE__*/
   enumDesc(file_vigo_home_v1_home, 1);
 
 /**
+ * A control of the iOS remote: the RemoteKey values iOS draws, the speaker's
+ * volume (the phone's hardware buttons) and mute, and the power button, which
+ * HomeKit delivers as the Television's Active characteristic.
+ *
+ * @generated from enum vigo.home.v1.RemoteButton
+ */
+export enum RemoteButton {
+  /**
+   * @generated from enum value: REMOTE_BUTTON_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_ARROW_UP = 1;
+   */
+  ARROW_UP = 1,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_ARROW_DOWN = 2;
+   */
+  ARROW_DOWN = 2,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_ARROW_LEFT = 3;
+   */
+  ARROW_LEFT = 3,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_ARROW_RIGHT = 4;
+   */
+  ARROW_RIGHT = 4,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_SELECT = 5;
+   */
+  SELECT = 5,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_BACK = 6;
+   */
+  BACK = 6,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_PLAY_PAUSE = 7;
+   */
+  PLAY_PAUSE = 7,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_INFORMATION = 8;
+   */
+  INFORMATION = 8,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_VOLUME_UP = 14;
+   */
+  VOLUME_UP = 14,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_VOLUME_DOWN = 15;
+   */
+  VOLUME_DOWN = 15,
+
+  /**
+   * @generated from enum value: REMOTE_BUTTON_MUTE = 16;
+   */
+  MUTE = 16,
+
+  /**
+   * The power button pressed while HomeKit shows the TV off (Active = 1).
+   *
+   * @generated from enum value: REMOTE_BUTTON_POWER_ON = 17;
+   */
+  POWER_ON = 17,
+
+  /**
+   * The power button pressed while HomeKit shows the TV on (Active = 0).
+   *
+   * @generated from enum value: REMOTE_BUTTON_POWER_OFF = 18;
+   */
+  POWER_OFF = 18,
+}
+
+/**
+ * Describes the enum vigo.home.v1.RemoteButton.
+ */
+export const RemoteButtonSchema: GenEnum<RemoteButton> = /*@__PURE__*/
+  enumDesc(file_vigo_home_v1_home, 2);
+
+/**
+ * @generated from enum vigo.home.v1.RemoteAction
+ */
+export enum RemoteAction {
+  /**
+   * @generated from enum value: REMOTE_ACTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Do nothing; the press is accepted without error.
+   *
+   * @generated from enum value: REMOTE_ACTION_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * Art Mode on if off, off if on (TVService.SetArtMode).
+   *
+   * @generated from enum value: REMOTE_ACTION_TOGGLE_ART_MODE = 2;
+   */
+  TOGGLE_ART_MODE = 2,
+
+  /**
+   * TVService.ShowArt with the current selection.
+   *
+   * @generated from enum value: REMOTE_ACTION_SHOW_ART = 3;
+   */
+  SHOW_ART = 3,
+}
+
+/**
+ * Describes the enum vigo.home.v1.RemoteAction.
+ */
+export const RemoteActionSchema: GenEnum<RemoteAction> = /*@__PURE__*/
+  enumDesc(file_vigo_home_v1_home, 3);
+
+/**
  * HomeService exposes the Apple Home (or future Matter) integration.
  *
  * @generated from service vigo.home.v1.HomeService
@@ -429,6 +743,37 @@ export const HomeService: GenService<{
     methodKind: "unary";
     input: typeof ResetPairingRequestSchema;
     output: typeof ResetPairingResponseSchema;
+  },
+  /**
+   * What each button of the iOS remote (Control Center) does. Apple draws the
+   * remote, so buttons cannot be added or removed, only remapped.
+   *
+   * @generated from rpc vigo.home.v1.HomeService.GetRemoteMapping
+   */
+  getRemoteMapping: {
+    methodKind: "unary";
+    input: typeof GetRemoteMappingRequestSchema;
+    output: typeof GetRemoteMappingResponseSchema;
+  },
+  /**
+   * Replaces the bindings for the given buttons; other buttons keep theirs.
+   *
+   * @generated from rpc vigo.home.v1.HomeService.UpdateRemoteMapping
+   */
+  updateRemoteMapping: {
+    methodKind: "unary";
+    input: typeof UpdateRemoteMappingRequestSchema;
+    output: typeof UpdateRemoteMappingResponseSchema;
+  },
+  /**
+   * Restores the default bindings for every button.
+   *
+   * @generated from rpc vigo.home.v1.HomeService.ResetRemoteMapping
+   */
+  resetRemoteMapping: {
+    methodKind: "unary";
+    input: typeof ResetRemoteMappingRequestSchema;
+    output: typeof ResetRemoteMappingResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_vigo_home_v1_home, 0);

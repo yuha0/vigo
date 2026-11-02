@@ -4,10 +4,15 @@ import {
   AccessoryKind,
   AccessorySchema,
   HomeService,
+  KeyOptionSchema,
   PairingGroupSchema,
   Protocol,
+  RemoteAction,
+  RemoteBindingSchema,
+  RemoteButton,
   type Accessory,
   type PairingGroup,
+  type RemoteBinding,
 } from "../gen/vigo/home/v1/home_pb";
 import {
   ProviderError,
@@ -17,6 +22,7 @@ import {
   type Provider,
   type ProtocolName,
 } from "../provider";
+import type { RemoteBindingView } from "../remote";
 
 /** What HomeService needs to know about this process. */
 export interface HomeRuntime {
@@ -72,6 +78,28 @@ function toGroup(g: PairingGroupView): PairingGroup {
   });
 }
 
+function toBinding(b: RemoteBindingView): RemoteBinding {
+  return create(RemoteBindingSchema, {
+    button: RemoteButton[b.button.toUpperCase() as keyof typeof RemoteButton],
+    target: {
+      target:
+        "key" in b.target
+          ? { case: "key", value: b.target.key }
+          : { case: "action", value: RemoteAction[b.target.action.toUpperCase() as keyof typeof RemoteAction] },
+    },
+  });
+}
+
+/** Proto → provider input. Unknown enum values become names the provider rejects. */
+function fromBinding(b: RemoteBinding): { button: string; target: unknown } {
+  const button = (RemoteButton[b.button] as string | undefined)?.toLowerCase() ?? `unknown(${b.button})`;
+  const t = b.target?.target;
+  let target: unknown;
+  if (t?.case === "key") target = { key: t.value };
+  else if (t?.case === "action") target = { action: (RemoteAction[t.value] as string | undefined)?.toLowerCase() ?? `unknown(${t.value})` };
+  return { button, target };
+}
+
 function wrap(err: unknown): never {
   if (err instanceof ConnectError) throw err;
   if (err instanceof ProviderError) throw new ConnectError(err.message, CODES[err.code]);
@@ -112,6 +140,24 @@ export function homeService(rt: HomeRuntime): ServiceImpl<typeof HomeService> {
     async resetPairing(req) {
       try {
         return { group: toGroup(await active().resetPairing(req.groupId)) };
+      } catch (err) {
+        wrap(err);
+      }
+    },
+    getRemoteMapping() {
+      const m = active().getRemoteMapping();
+      return { bindings: m.bindings.map(toBinding), keys: m.keys.map((k) => create(KeyOptionSchema, k)) };
+    },
+    async updateRemoteMapping(req) {
+      try {
+        return { bindings: (await active().updateRemoteMapping(req.bindings.map(fromBinding))).map(toBinding) };
+      } catch (err) {
+        wrap(err);
+      }
+    },
+    async resetRemoteMapping() {
+      try {
+        return { bindings: (await active().resetRemoteMapping()).map(toBinding) };
       } catch (err) {
         wrap(err);
       }

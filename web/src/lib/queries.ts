@@ -28,6 +28,7 @@ export const qk = {
   homeProvider: ["home", "provider"],
   homeGroups: ["home", "groups"],
   homeAccessories: ["home", "accessories"],
+  homeRemote: ["home", "remote"],
 } as const;
 
 function updatedMs(s: Status | null | undefined): number {

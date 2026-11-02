@@ -3,11 +3,16 @@ import { Code, ConnectError } from "@connectrpc/connect";
 
 import {
   AccessoryKind,
+  KeyOptionSchema,
+  RemoteAction,
+  RemoteBindingSchema,
+  RemoteButton,
   AccessorySchema,
   PairingGroupSchema,
   Protocol,
   ProviderSchema,
   type Accessory,
+  type RemoteBinding,
   type PairingGroup,
 } from "@/gen/vigo/home/v1/home_pb";
 import type { HomeMode } from "@/lib/mock/control";
@@ -27,8 +32,78 @@ export function setupUri(code: string, category: number, setupId: string): strin
   return `X-HM://${payload.toString(36).toUpperCase().padStart(9, "0")}${setupId}`;
 }
 
+const verifiedKeys = new Set(["KEY_UP", "KEY_ENTER", "KEY_HOME", "KEY_VOLUP"]);
+
+/** The keys vigo-home allows binding: documented by samsungtvws, never KEY_POWER. */
+export const remoteKeys = [
+  ["KEY_UP", "Up"],
+  ["KEY_DOWN", "Down"],
+  ["KEY_LEFT", "Left"],
+  ["KEY_RIGHT", "Right"],
+  ["KEY_ENTER", "Enter"],
+  ["KEY_RETURN", "Return"],
+  ["KEY_HOME", "Home"],
+  ["KEY_MENU", "Menu"],
+  ["KEY_TOOLS", "Tools"],
+  ["KEY_GUIDE", "Guide"],
+  ["KEY_INFO", "Info"],
+  ["KEY_SOURCE", "Source"],
+  ["KEY_CH_LIST", "Channel list"],
+  ["KEY_CHUP", "Channel up"],
+  ["KEY_CHDOWN", "Channel down"],
+  ["KEY_VOLUP", "Volume up"],
+  ["KEY_VOLDOWN", "Volume down"],
+  ["KEY_MUTE", "Mute"],
+  ["KEY_RED", "Red"],
+  ["KEY_GREEN", "Green"],
+  ["KEY_YELLOW", "Yellow"],
+  ["KEY_BLUE", "Blue"],
+  ...Array.from({ length: 10 }, (_, d) => [`KEY_${d}`, String(d)]),
+].map(([key, label]) => create(KeyOptionSchema, { key, label, verified: verifiedKeys.has(key) }));
+
+const defaultKeys: Partial<Record<RemoteButton, string>> = {
+  [RemoteButton.ARROW_UP]: "KEY_UP",
+  [RemoteButton.ARROW_DOWN]: "KEY_DOWN",
+  [RemoteButton.ARROW_LEFT]: "KEY_LEFT",
+  [RemoteButton.ARROW_RIGHT]: "KEY_RIGHT",
+  [RemoteButton.SELECT]: "KEY_ENTER",
+  [RemoteButton.BACK]: "KEY_RETURN",
+  [RemoteButton.VOLUME_UP]: "KEY_VOLUP",
+  [RemoteButton.VOLUME_DOWN]: "KEY_VOLDOWN",
+  [RemoteButton.MUTE]: "KEY_MUTE",
+};
+
+const buttonOrder = [
+  RemoteButton.POWER_ON,
+  RemoteButton.POWER_OFF,
+  RemoteButton.ARROW_UP,
+  RemoteButton.ARROW_DOWN,
+  RemoteButton.ARROW_LEFT,
+  RemoteButton.ARROW_RIGHT,
+  RemoteButton.SELECT,
+  RemoteButton.BACK,
+  RemoteButton.PLAY_PAUSE,
+  RemoteButton.INFORMATION,
+  RemoteButton.VOLUME_UP,
+  RemoteButton.VOLUME_DOWN,
+  RemoteButton.MUTE,
+];
+
+/** Defaults: power-on shows art; arrows, select, back and volume map to their keys; everything else does nothing. */
+export function defaultBindings(): RemoteBinding[] {
+  return buttonOrder.map((button) => {
+    const key = defaultKeys[button];
+    const action = button === RemoteButton.POWER_ON ? RemoteAction.SHOW_ART : RemoteAction.NONE;
+    return create(RemoteBindingSchema, {
+      button,
+      target: { target: key ? { case: "key", value: key } : { case: "action", value: action } },
+    });
+  });
+}
+
 export class MockHome {
   mode: HomeMode;
+  bindings: RemoteBinding[] = defaultBindings();
   accessories: Accessory[];
   groups: PairingGroup[];
 
@@ -134,6 +209,36 @@ export class MockHome {
       bridge.advertised = this.accessories.some((x) => x.pairingGroupId === "bridge" && x.enabled);
     }
     return clone(AccessorySchema, a);
+  }
+
+  remoteMapping() {
+    this.check();
+    return { bindings: this.bindings.map((b) => clone(RemoteBindingSchema, b)), keys: remoteKeys.map((k) => clone(KeyOptionSchema, k)) };
+  }
+
+  updateRemoteMapping(changes: RemoteBinding[]) {
+    this.check();
+    for (const c of changes) {
+      if (!this.bindings.some((b) => b.button === c.button)) throw new ConnectError("unknown remote button", Code.InvalidArgument);
+      const t = c.target?.target;
+      if (t?.case === "key") {
+        if (t.value === "KEY_POWER") throw new ConnectError("KEY_POWER can't be bound; use Show art", Code.InvalidArgument);
+        if (!remoteKeys.some((k) => k.key === t.value)) throw new ConnectError(`${t.value} isn't a key vigo can send`, Code.InvalidArgument);
+      } else if (t?.case !== "action" || t.value === RemoteAction.UNSPECIFIED) {
+        throw new ConnectError("choose a key or an action", Code.InvalidArgument);
+      }
+    }
+    this.bindings = this.bindings.map((b) => {
+      const c = changes.find((x) => x.button === b.button);
+      return c ? create(RemoteBindingSchema, { button: b.button, target: c.target }) : b;
+    });
+    return this.bindings.map((b) => clone(RemoteBindingSchema, b));
+  }
+
+  resetRemoteMapping() {
+    this.check();
+    this.bindings = defaultBindings();
+    return this.bindings.map((b) => clone(RemoteBindingSchema, b));
   }
 
   reset(groupId: string) {

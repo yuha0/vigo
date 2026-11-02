@@ -1,4 +1,5 @@
 import { Characteristic } from "@homebridge/hap-nodejs";
+import type { RemoteButtonName } from "../remote";
 
 export const INPUT_ART = 1;
 export const INPUT_TV = 2;
@@ -10,27 +11,25 @@ export const BRIGHTNESS_KEY = "brightness";
 
 const R = Characteristic.RemoteKey;
 
-/** HomeKit RemoteKey → Samsung key, as specified in docs/design.md. */
-export const REMOTE_KEYS: ReadonlyMap<number, string> = new Map([
-  [R.ARROW_UP, "KEY_UP"],
-  [R.ARROW_DOWN, "KEY_DOWN"],
-  [R.ARROW_LEFT, "KEY_LEFT"],
-  [R.ARROW_RIGHT, "KEY_RIGHT"],
-  [R.SELECT, "KEY_ENTER"],
-  [R.BACK, "KEY_RETURN"],
-  [R.EXIT, "KEY_EXIT"],
-  [R.PLAY_PAUSE, "KEY_PLAY"],
+/**
+ * HomeKit RemoteKey values → remote buttons. What a button does is configurable (../remote.ts).
+ * The iOS remote draws no button for the other RemoteKey values (EXIT, REWIND, FAST_FORWARD,
+ * NEXT_TRACK, PREVIOUS_TRACK); presses of them are accepted and ignored.
+ */
+export const REMOTE_KEY_BUTTONS: ReadonlyMap<number, RemoteButtonName> = new Map<number, RemoteButtonName>([
+  [R.ARROW_UP, "arrow_up"],
+  [R.ARROW_DOWN, "arrow_down"],
+  [R.ARROW_LEFT, "arrow_left"],
+  [R.ARROW_RIGHT, "arrow_right"],
+  [R.SELECT, "select"],
+  [R.BACK, "back"],
+  [R.PLAY_PAUSE, "play_pause"],
+  [R.INFORMATION, "information"],
 ]);
 
-/**
- * Accepted but sends nothing. Apple's remote always shows the (i) button, so pressing it must
- * not surface as an error.
- */
-export const SILENT_REMOTE_KEYS: ReadonlySet<number> = new Set([R.INFORMATION]);
-
-export function volumeKey(selector: number): string | undefined {
-  if (selector === Characteristic.VolumeSelector.INCREMENT) return "KEY_VOLUP";
-  if (selector === Characteristic.VolumeSelector.DECREMENT) return "KEY_VOLDOWN";
+export function volumeButton(selector: number): RemoteButtonName | undefined {
+  if (selector === Characteristic.VolumeSelector.INCREMENT) return "volume_up";
+  if (selector === Characteristic.VolumeSelector.DECREMENT) return "volume_down";
   return undefined;
 }
 

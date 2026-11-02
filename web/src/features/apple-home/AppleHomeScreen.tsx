@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { AccessoryKind, Protocol, type Accessory, type PairingGroup, type Provider } from "@/gen/vigo/home/v1/home_pb";
 import { QrCode } from "@/features/apple-home/QrCode";
 import { ResetPairingDialog } from "@/features/apple-home/ResetPairingDialog";
-import { useAccessories, useGroups, useProvider, useResetPairing, useSetAccessoryEnabled } from "@/features/apple-home/queries";
+import { useAccessories, useGroups, useProvider, useRemoteMapping, useResetPairing, useSetAccessoryEnabled } from "@/features/apple-home/queries";
+import { RemoteMappingSection } from "@/features/apple-home/RemoteMappingSection";
 import { formatSetupCode } from "@/features/apple-home/setup-code";
 import { describeError, isUnavailable } from "@/lib/errors";
 import { qk } from "@/lib/queries";
@@ -28,11 +29,12 @@ export function AppleHomeScreen() {
   const ready = !!provider.data?.implemented;
   const groups = useGroups(ready);
   const accessories = useAccessories(ready);
+  const remote = useRemoteMapping(ready);
   const qc = useQueryClient();
   const retry = () => void qc.refetchQueries({ queryKey: qk.home });
 
-  const offline = [provider.error, groups.error, accessories.error].some(isUnavailable);
-  const otherError = !offline ? (provider.error ?? groups.error ?? accessories.error) : null;
+  const offline = [provider.error, groups.error, accessories.error, remote.error].some(isUnavailable);
+  const otherError = !offline ? (provider.error ?? groups.error ?? accessories.error ?? remote.error) : null;
 
   let body;
   if (offline) {
@@ -59,6 +61,7 @@ export function AppleHomeScreen() {
         {(groups.data?.groups ?? []).map((g) => (
           <GroupCard key={g.id} group={g} accessories={byGroup.get(g.id) ?? []} />
         ))}
+        <RemoteMappingSection mapping={remote.data} />
       </div>
     );
   }

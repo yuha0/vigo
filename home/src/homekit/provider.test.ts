@@ -208,3 +208,121 @@ describe("HomeKitProvider", () => {
     expect(host.published.size).toBe(0);
   });
 });
+
+describe("HomeKitProvider remote mapping", () => {
+  function newProvider() {
+    return new HomeKitProvider({
+      core,
+      store,
+      log: silentLogger(),
+      metrics: new Metrics({ defaultMetrics: false }),
+      host,
+      tvName: "The Frame",
+      hapPortTv: 51830,
+      hapPortBridge: 51831,
+    });
+  }
+
+  it("starts with the defaults, in display order", async () => {
+    await provider.start();
+    const m = provider.getRemoteMapping();
+    expect(m.bindings.map((b) => [b.button, b.target])).toEqual([
+      ["power_on", { action: "show_art" }],
+      ["power_off", { action: "none" }],
+      ["arrow_up", { key: "KEY_UP" }],
+      ["arrow_down", { key: "KEY_DOWN" }],
+      ["arrow_left", { key: "KEY_LEFT" }],
+      ["arrow_right", { key: "KEY_RIGHT" }],
+      ["select", { key: "KEY_ENTER" }],
+      ["back", { key: "KEY_RETURN" }],
+      ["play_pause", { action: "none" }],
+      ["information", { action: "none" }],
+      ["volume_up", { key: "KEY_VOLUP" }],
+      ["volume_down", { key: "KEY_VOLDOWN" }],
+      ["mute", { key: "KEY_MUTE" }],
+    ]);
+    expect(m.keys.filter((k) => k.verified).map((k) => k.key).sort()).toEqual(["KEY_ENTER", "KEY_HOME", "KEY_UP", "KEY_VOLUP"]);
+    expect(m.keys.map((k) => k.key).sort()).toEqual(
+      [
+        "KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT",
+        "KEY_ENTER", "KEY_RETURN", "KEY_HOME", "KEY_MENU", "KEY_TOOLS", "KEY_INFO", "KEY_GUIDE", "KEY_SOURCE", "KEY_CH_LIST",
+        "KEY_CHUP", "KEY_CHDOWN", "KEY_VOLUP", "KEY_VOLDOWN", "KEY_MUTE",
+        "KEY_RED", "KEY_GREEN", "KEY_YELLOW", "KEY_BLUE",
+        ...Array.from({ length: 10 }, (_, i) => `KEY_${i}`),
+      ].sort(),
+    );
+  });
+
+  it("updates only the given buttons, persists, and survives a restart", async () => {
+    await provider.start();
+    const res = await provider.updateRemoteMapping([
+      { button: "information", target: { key: "KEY_MENU" } },
+      { button: "play_pause", target: { action: "toggle_art_mode" } },
+    ]);
+    const byButton = Object.fromEntries(res.map((b) => [b.button, b.target]));
+    expect(byButton).toMatchObject({ information: { key: "KEY_MENU" }, play_pause: { action: "toggle_art_mode" }, select: { key: "KEY_ENTER" } });
+    expect((store.saved as HomeState).remote).toMatchObject({ information: { key: "KEY_MENU" } });
+
+    await provider.stop();
+    provider = newProvider();
+    await provider.start();
+    const again = Object.fromEntries(provider.getRemoteMapping().bindings.map((b) => [b.button, b.target]));
+    expect(again).toEqual(byButton);
+  });
+
+  it("rejects KEY_POWER, unknown keys, unknown buttons and empty targets, all or nothing", async () => {
+    await provider.start();
+    await expect(provider.updateRemoteMapping([{ button: "select", target: { key: "KEY_POWER" } }])).rejects.toMatchObject({
+      code: "invalid_argument",
+      message: expect.stringContaining("motion-sleep") as unknown,
+    });
+    await expect(provider.updateRemoteMapping([{ button: "select", target: { key: "KEY_PLAY" } }])).rejects.toMatchObject({ code: "invalid_argument" });
+    await expect(provider.updateRemoteMapping([{ button: "power", target: { key: "KEY_UP" } }])).rejects.toMatchObject({ code: "invalid_argument" });
+    await expect(provider.updateRemoteMapping([{ button: "exit", target: { key: "KEY_UP" } }])).rejects.toMatchObject({ code: "invalid_argument" });
+    await expect(provider.updateRemoteMapping([{ button: "power_off", target: { key: "KEY_POWER" } }])).rejects.toMatchObject({ code: "invalid_argument" });
+    await expect(provider.updateRemoteMapping([{ button: "select", target: undefined }])).rejects.toMatchObject({ code: "invalid_argument" });
+    await expect(
+      provider.updateRemoteMapping([
+        { button: "information", target: { key: "KEY_MENU" } },
+        { button: "select", target: { action: "reboot" } },
+      ]),
+    ).rejects.toMatchObject({ code: "invalid_argument" });
+    expect(provider.getRemoteMapping().bindings.find((b) => b.button === "information")!.target).toEqual({ action: "none" });
+  });
+
+  it("resets to the defaults", async () => {
+    await provider.start();
+    await provider.updateRemoteMapping([{ button: "arrow_up", target: { key: "KEY_CHUP" } }]);
+    const res = await provider.resetRemoteMapping();
+    expect(res.find((b) => b.button === "arrow_up")!.target).toEqual({ key: "KEY_UP" });
+    await provider.stop();
+    provider = newProvider();
+    await provider.start();
+    expect(provider.getRemoteMapping().bindings.find((b) => b.button === "arrow_up")!.target).toEqual({ key: "KEY_UP" });
+  });
+
+  it("falls back to the default per button for invalid stored bindings", async () => {
+    await store.saveHome({
+      version: 1,
+      groups: {},
+      enabled: {},
+      remote: {
+        information: { key: "KEY_MENU" },
+        select: { key: "KEY_POWER" },
+        back: "garbage",
+        nonsense: { key: "KEY_UP" },
+        exit: { key: "KEY_HOME" },
+        rewind: { action: "none" },
+      },
+    });
+    await provider.start();
+    const m = Object.fromEntries(provider.getRemoteMapping().bindings.map((b) => [b.button, b.target]));
+    expect(m).toMatchObject({ information: { key: "KEY_MENU" }, select: { key: "KEY_ENTER" }, back: { key: "KEY_RETURN" } });
+    expect(Object.keys(m)).not.toContain("exit");
+    expect(Object.keys(m)).toHaveLength(13);
+  });
+
+  it("refuses mutations before start", async () => {
+    await expect(provider.resetRemoteMapping()).rejects.toMatchObject({ code: "unavailable" });
+  });
+});
