@@ -19,6 +19,7 @@ import {
   MOTION_TIMER_KEY,
   MOTION_TIMER_OFF,
   REMOTE_KEYS,
+  SILENT_REMOTE_KEYS,
   percentToRange,
   rangeToPercent,
   volumeKey,
@@ -153,6 +154,11 @@ export function buildTelevision(ctx: AccessoryContext, name: string): BuiltAcces
   });
 
   tv.getCharacteristic(Characteristic.RemoteKey).onSet(async (value) => {
+    if (SILENT_REMOTE_KEYS.has(value as number)) {
+      ctx.metrics.recordWrite(id, "ignored");
+      ctx.log.debug({ accessory: id, write: `RemoteKey=${JSON.stringify(value)}` }, "remote key has no TV action");
+      return;
+    }
     const key = REMOTE_KEYS.get(value as number);
     if (!key) {
       ignored(ctx, id, `RemoteKey=${JSON.stringify(value)}`, "no mapping");

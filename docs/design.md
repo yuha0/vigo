@@ -112,7 +112,8 @@ The browser listener (`:8080`) is protected by one password, with no username (`
 
 These come from verified research and are deliberately reflected in the API shape:
 
-- **"Selected", never "displaying".** Nothing the TV reports says whether the panel is lit. `Status.selected_art` is what the TV has selected, which the panel converges to with a lag. `Status.showing_art` means only `power == ON && art_mode == ON`.
+- **"Selected", never "displaying".** Nothing the TV reports says whether the panel is lit. `Status.selected_art` is what the TV has selected, which the panel converges to with a lag. Its `confirmed` is true when the selection came from a `select_image` reply or an `image_selected` event; otherwise it is only `get_current_artwork`'s report, which can be stale for hours and never converge (docs/tv-api.md §5 "Three gotchas"). A confirmed selection is replaced only by another `select_image` reply or `image_selected` event, never by `get_current_artwork`, which is read only while there is no confirmed selection; it is dropped if its artwork is deleted. Changes made outside vigo arrive as `image_selected` events while vigo is connected; one made while vigo was disconnected goes unseen until the next selection, and that is accepted. `Status.showing_art` means only `power == ON && art_mode == ON`.
+- **Show Art never changes the selection while the TV is awake.** Awake in TV mode it only turns Art Mode on; awake in Art Mode it does nothing. It sends `select_image` only for a `content_id` the caller passed, or to wake or light the panel (from motion-sleep, and after a `KEY_POWER` wake), and then selects the confirmed selection, else the TV's report.
 - **Setters are verified by re-reading.** `UpdateSetting` sends `set_<key>`, then re-reads `get_artmode_settings`. `confirmed = false` means the TV acknowledged but the value didn't change.
 - **`KEY_POWER` is never sent raw.** Its effect depends on state, and from motion-sleep it powers the TV fully off. `SendKey` rejects it. Waking is `ShowArt`, which implements the state-dependent wake algorithm.
 - **No remote power-off.** Long-press `KEY_POWER` over the websocket (3s and 6s holds) was tested and left the TV on. There is no `PowerOff` RPC until a working method is verified.
@@ -302,7 +303,7 @@ HomeKit RemoteKey mapping:
 | BACK | `KEY_RETURN` |
 | EXIT | `KEY_EXIT` |
 | PLAY_PAUSE | `KEY_PLAY` |
-| INFORMATION | `KEY_INFO` |
+| INFORMATION | nothing (accepted and ignored; Apple always shows the button) |
 
 Only `KEY_UP`, `KEY_ENTER`, `KEY_HOME` and `KEY_VOLUP` have been observed reaching the tested TV. Verify every other key against the TV before relying on it.
 

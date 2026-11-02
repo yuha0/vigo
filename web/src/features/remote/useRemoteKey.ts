@@ -20,7 +20,7 @@ export function useSendKey() {
  * Pointer handlers for one remote button: a tap sends CLICK; holding sends
  * PRESS, then RELEASE when the finger lifts or leaves.
  */
-export function useRemoteKey(key: string, send: (key: string, action: KeyAction) => void) {
+export function useRemoteKey(key: string, send: (key: string, action: KeyAction) => void, { hold = true }: { hold?: boolean } = {}) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const held = useRef(false);
   const down = useRef(false);
@@ -46,6 +46,7 @@ export function useRemoteKey(key: string, send: (key: string, action: KeyAction)
       down.current = true;
       held.current = false;
       haptic(8);
+      if (!hold) return;
       timer.current = setTimeout(() => {
         held.current = true;
         haptic([4, 30, 4]);

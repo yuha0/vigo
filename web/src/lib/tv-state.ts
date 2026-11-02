@@ -1,5 +1,15 @@
 import { ArtModeState, ConnectionState, PowerState, type Status } from "@/gen/vigo/core/v1/core_pb";
 
+/**
+ * The selected content id, but only when the TV confirmed it. An unconfirmed
+ * id comes from get_current_artwork, which can be hours out of date, so the
+ * UI never presents it as the selection.
+ */
+export function confirmedSelection(status: Status | null | undefined): string {
+  const s = status?.selectedArt;
+  return s?.confirmed ? s.contentId : "";
+}
+
 export type TvStateKind =
   | "loading"
   | "showing-art"

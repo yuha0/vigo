@@ -16,6 +16,12 @@ import (
 // ShowArt puts art on the panel with the wake algorithm of docs/tv-api.md §5
 // "Waking the panel". contentID may be empty to keep the current selection.
 //
+// It never changes the selection on its own while the TV is awake: awake in
+// TV mode it only turns Art Mode on, awake in Art Mode it does nothing.
+// select_image is sent only when the caller passes contentID, or when it is
+// needed to wake or light the panel: from motion-sleep, and after a
+// KEY_POWER wake. Those use contentID, else wakeTarget.
+//
 // KEY_POWER is a toggle: from motion-sleep it powers the TV fully off, after
 // which only the physical remote may recover it. It is therefore sent only
 // when a fresh read in this call shows PowerState standby and art mode off.
@@ -64,12 +70,6 @@ func (s *Service) showArt(ctx context.Context, client samsung.Client, conn samsu
 		return power, fmt.Errorf("read art mode: %w", err)
 	}
 	s.setArtMode(artOn)
-	target := contentID
-	if target == "" {
-		if target, err = s.selectedContentID(ctx, conn); err != nil {
-			return power, err
-		}
-	}
 
 	switch power {
 	case corev1.PowerState_POWER_STATE_ON:
@@ -78,11 +78,18 @@ func (s *Service) showArt(ctx context.Context, client samsung.Client, conn samsu
 				return power, err
 			}
 		}
-		// select_image also lights a panel that is dark in Art Mode, which
-		// nothing the TV reports can detect.
-		return power, s.selectArt(ctx, conn, target)
+		if contentID != "" {
+			return power, s.selectArt(ctx, conn, contentID)
+		}
+		return power, nil
 
 	case corev1.PowerState_POWER_STATE_STANDBY:
+		target := contentID
+		if target == "" {
+			if target, err = s.wakeTarget(ctx, conn); err != nil {
+				return power, err
+			}
+		}
 		if artOn {
 			// Motion-sleep: select_image wakes it; set_artmode_status would
 			// be a no-op because art mode is already on.

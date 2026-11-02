@@ -473,8 +473,12 @@ type SelectedArt struct {
 	ContentId       string                 `protobuf:"bytes,1,opt,name=content_id,json=contentId,proto3" json:"content_id,omitempty"`
 	MatteId         string                 `protobuf:"bytes,2,opt,name=matte_id,json=matteId,proto3" json:"matte_id,omitempty"`
 	PortraitMatteId string                 `protobuf:"bytes,3,opt,name=portrait_matte_id,json=portraitMatteId,proto3" json:"portrait_matte_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// True when the TV confirmed this selection (a select_image reply or an
+	// image_selected event). False when it only comes from get_current_artwork,
+	// which can report a stale artwork for hours.
+	Confirmed     bool `protobuf:"varint,4,opt,name=confirmed,proto3" json:"confirmed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SelectedArt) Reset() {
@@ -526,6 +530,13 @@ func (x *SelectedArt) GetPortraitMatteId() string {
 		return x.PortraitMatteId
 	}
 	return ""
+}
+
+func (x *SelectedArt) GetConfirmed() bool {
+	if x != nil {
+		return x.Confirmed
+	}
+	return false
 }
 
 type Device struct {
@@ -3109,12 +3120,13 @@ const file_vigo_core_v1_core_proto_rawDesc = "" +
 	"\areplica\x18\t \x01(\tR\areplica\x129\n" +
 	"\n" +
 	"updated_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"s\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x91\x01\n" +
 	"\vSelectedArt\x12\x1d\n" +
 	"\n" +
 	"content_id\x18\x01 \x01(\tR\tcontentId\x12\x19\n" +
 	"\bmatte_id\x18\x02 \x01(\tR\amatteId\x12*\n" +
-	"\x11portrait_matte_id\x18\x03 \x01(\tR\x0fportraitMatteId\"\x8c\x02\n" +
+	"\x11portrait_matte_id\x18\x03 \x01(\tR\x0fportraitMatteId\x12\x1c\n" +
+	"\tconfirmed\x18\x04 \x01(\bR\tconfirmed\"\x8c\x02\n" +
 	"\x06Device\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x1d\n" +
 	"\n" +

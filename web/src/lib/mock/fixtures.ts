@@ -126,6 +126,8 @@ export function scenarioStatus(s: Scenario): StatusShape {
       return { ...base, power: PowerState.ON, artMode: ArtModeState.OFF, connection: ConnectionState.NO_ART_HOST };
     case "standby-replica":
       return { leader: false, power: PowerState.UNSPECIFIED, artMode: ArtModeState.UNSPECIFIED, connection: ConnectionState.STANDBY_REPLICA };
+    case "unconfirmed":
+      return { ...base, power: PowerState.ON, artMode: ArtModeState.ON, connection: ConnectionState.CONNECTED };
     case "model-changed":
       return {
         ...base,

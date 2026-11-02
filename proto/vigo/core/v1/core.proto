@@ -130,6 +130,10 @@ message SelectedArt {
   string content_id = 1;
   string matte_id = 2;
   string portrait_matte_id = 3;
+  // True when the TV confirmed this selection (a select_image reply or an
+  // image_selected event). False when it only comes from get_current_artwork,
+  // which can report a stale artwork for hours.
+  bool confirmed = 4;
 }
 
 message Device {

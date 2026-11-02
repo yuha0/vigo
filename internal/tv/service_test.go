@@ -132,19 +132,23 @@ func TestShowArtStateMatrix(t *testing.T) {
 		wantArtMode bool
 	}{
 		{
-			name: "awake in art mode re-selects to light the panel", power: fake.PowerOn, artMode: true,
-			want: []string{"select_image:SAM-S2701"}, wantPower: fake.PowerOn, wantArtMode: true,
+			name: "awake in art mode does nothing", power: fake.PowerOn, artMode: true,
+			want: nil, wantPower: fake.PowerOn, wantArtMode: true,
 		},
 		{
 			name: "awake in art mode with content", power: fake.PowerOn, artMode: true, contentID: "SAM-S2702",
 			want: []string{"select_image:SAM-S2702"}, wantPower: fake.PowerOn, wantArtMode: true,
 		},
 		{
-			name: "awake in normal TV mode", power: fake.PowerOn, artMode: false,
-			want: []string{"set_artmode_status:on", "select_image:SAM-S2701"}, wantPower: fake.PowerOn, wantArtMode: true,
+			name: "awake in normal TV mode only turns Art Mode on", power: fake.PowerOn, artMode: false,
+			want: []string{"set_artmode_status:on"}, wantPower: fake.PowerOn, wantArtMode: true,
 		},
 		{
-			name: "motion-sleep selects the current art", power: fake.PowerStandby, artMode: true,
+			name: "awake in normal TV mode with content", power: fake.PowerOn, artMode: false, contentID: "SAM-S2702",
+			want: []string{"set_artmode_status:on", "select_image:SAM-S2702"}, wantPower: fake.PowerOn, wantArtMode: true,
+		},
+		{
+			name: "motion-sleep without a confirmed selection selects the TV's report", power: fake.PowerStandby, artMode: true,
 			want: []string{"select_image:SAM-S2701"}, wantPower: fake.PowerOn, wantArtMode: true,
 		},
 		{
@@ -188,29 +192,41 @@ func TestShowArtStateMatrix(t *testing.T) {
 	}
 }
 
-func TestSelectionSurvivesStaleReport(t *testing.T) {
-	ctx := context.Background()
-	h := connected(t)
-	h.tv.ReportCurrent("SAM-S2701")
-	selected := func(id string) func(*corev1.Status) bool {
-		return func(s *corev1.Status) bool { return s.GetSelectedArt().GetContentId() == id }
+func isSelected(id string, confirmed bool) func(*corev1.Status) bool {
+	return func(s *corev1.Status) bool {
+		return s.GetSelectedArt().GetContentId() == id && s.GetSelectedArt().GetConfirmed() == confirmed
 	}
+}
 
-	if _, err := h.svc.SelectArt(ctx, "SAM-S2702"); err != nil {
+// refreshNow re-reads the TV, past Refresh's two-second debounce.
+func (h *harness) refreshNow(t *testing.T) {
+	t.Helper()
+	h.svc.refreshMu.Lock()
+	h.svc.lastRefresh = time.Time{}
+	h.svc.refreshMu.Unlock()
+	if _, err := h.svc.Refresh(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// No get_current_artwork value replaces a confirmed selection, never-seen
+// or not, across reconnects and restarts.
+func TestConfirmedSelectionIgnoresReports(t *testing.T) {
+	ctx := context.Background()
+	h := connected(t)
 	if _, err := h.svc.SelectArt(ctx, "SAM-S2703"); err != nil {
 		t.Fatal(err)
 	}
-	h.tv.DropConnections()
-	h.waitConn(t, corev1.ConnectionState_CONNECTION_STATE_CONNECTED)
-	h.waitFor(t, "SAM-S2703 while the TV reports SAM-S2701", selected("SAM-S2703"))
-
-	h.tv.ReportCurrent("SAM-S2702")
-	h.tv.DropConnections()
-	h.waitConn(t, corev1.ConnectionState_CONNECTION_STATE_CONNECTED)
-	h.waitFor(t, "SAM-S2703 while the report catches up through SAM-S2702", selected("SAM-S2703"))
-
+	h.waitFor(t, "a confirmed SAM-S2703", isSelected("SAM-S2703", true))
+	for _, report := range []string{"SAM-S2701", "SAM-S2705", "SAM-F0222"} {
+		h.tv.ReportCurrent(report)
+		h.refreshNow(t)
+		h.tv.DropConnections()
+		h.waitConn(t, corev1.ConnectionState_CONNECTION_STATE_CONNECTED)
+		if got := h.svc.Status().GetSelectedArt(); got.GetContentId() != "SAM-S2703" || !got.GetConfirmed() {
+			t.Fatalf("report %s replaced the confirmed selection: %v", report, got)
+		}
+	}
 	restarted, err := New(h.svc.opts)
 	if err != nil {
 		t.Fatal(err)
@@ -218,13 +234,71 @@ func TestSelectionSurvivesStaleReport(t *testing.T) {
 	if err := restarted.load(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if got := restarted.Status().GetSelectedArt().GetContentId(); got != "SAM-S2703" {
-		t.Errorf("after restart selected %q, want SAM-S2703", got)
+	if got := restarted.Status().GetSelectedArt(); got.GetContentId() != "SAM-S2703" || !got.GetConfirmed() {
+		t.Errorf("after restart: %v", got)
 	}
+}
 
-	h.tv.ReportCurrent("SAM-S2705")
-	h.tv.DropConnections()
-	h.waitFor(t, "a change made elsewhere, seen on reconnect", selected("SAM-S2705"))
+// On a fresh database, a selection confirmed before the TV was ever read is
+// not overwritten by the first (stale) report.
+func TestConfirmedBeforeFirstReport(t *testing.T) {
+	ctx := context.Background()
+	h := newHarness(t, setup{token: fake.Token})
+	h.svc.selected(ctx, &corev1.SelectedArt{ContentId: "SAM-S2705"})
+	conn, err := h.tv.Client(samsung.Config{Token: fake.Token}).DialArt(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	h.tv.ReportCurrent("SAM-F0222")
+	h.tv.ResetCalls()
+	h.svc.refreshSelected(ctx, conn)
+	if got := h.svc.Status().GetSelectedArt(); got.GetContentId() != "SAM-S2705" || !got.GetConfirmed() {
+		t.Errorf("first report replaced the confirmed selection: %v", got)
+	}
+	if slices.Contains(h.tv.Calls(), "get_current_artwork") {
+		t.Error("get_current_artwork read while a confirmed selection exists")
+	}
+}
+
+// A change made from another client arrives as image_selected and replaces
+// the confirmed selection.
+func TestImageSelectedEventReplacesConfirmed(t *testing.T) {
+	ctx := context.Background()
+	h := connected(t)
+	if _, err := h.svc.SelectArt(ctx, "SAM-S2703"); err != nil {
+		t.Fatal(err)
+	}
+	other, err := h.tv.Client(samsung.Config{Token: fake.Token}).DialArt(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer other.Close()
+	if err := other.SelectImage(ctx, "SAM-S2706"); err != nil {
+		t.Fatal(err)
+	}
+	h.waitFor(t, "the outside selection, confirmed", isSelected("SAM-S2706", true))
+}
+
+// When the confirmed artwork is deleted the TV moves on by itself, so the
+// confirmation is dropped and the TV's report is used again.
+func TestDeletingTheConfirmedArtworkDropsIt(t *testing.T) {
+	ctx := context.Background()
+	h := connected(t)
+	if _, err := h.svc.SelectArt(ctx, "MY_F0001"); err != nil {
+		t.Fatal(err)
+	}
+	h.waitFor(t, "a confirmed MY_F0001", isSelected("MY_F0001", true))
+	if _, err := h.svc.DeleteArt(ctx, []string{"MY_F0001"}); err != nil {
+		t.Fatal(err)
+	}
+	h.refreshNow(t)
+	h.waitFor(t, "the TV's report, unconfirmed", func(s *corev1.Status) bool {
+		return s.GetSelectedArt().GetContentId() != "MY_F0001" && !s.GetSelectedArt().GetConfirmed()
+	})
+	if b, _ := h.store.Selection(ctx); b != nil {
+		t.Errorf("deleted selection still persisted: %s", b)
+	}
 }
 
 func TestRefreshReadsTheTV(t *testing.T) {
@@ -1027,4 +1101,98 @@ func TestChangeMatte(t *testing.T) {
 	if err != nil || len(types) == 0 || len(colors) == 0 || !strings.HasPrefix(colors[0].Hex, "#") || len(colors[0].Hex) != 7 {
 		t.Errorf("mattes = %v %v %v", types, colors, err)
 	}
+}
+
+// The production incident: on a fresh database the TV reported an artwork
+// from hours before. ShowArt in TV mode then re-selected it and changed what
+// was displayed. Now the stale report is unconfirmed and ShowArt only turns
+// Art Mode on.
+func TestShowArtNeverReselectsWhileAwake(t *testing.T) {
+	h := connected(t)
+	h.tv.ReportCurrent("SAM-F0222")
+	if _, err := h.svc.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	h.waitFor(t, "the stale report", func(s *corev1.Status) bool { return s.GetSelectedArt().GetContentId() == "SAM-F0222" })
+	if h.svc.Status().SelectedArt.Confirmed {
+		t.Error("a get_current_artwork value is confirmed")
+	}
+	h.tv.SetPower(fake.PowerOn, false)
+	h.tv.ResetCalls()
+	if _, err := h.svc.ShowArt(context.Background(), ""); err != nil {
+		t.Fatal(err)
+	}
+	if got := commands(h.tv.Calls()); !slices.Equal(got, []string{"set_artmode_status:on"}) {
+		t.Errorf("commands = %q", got)
+	}
+}
+
+// As in production: the TV already reports a stale artwork, vigo selects
+// another, and the report never converges. The confirmed selection wins
+// and is what a wake selects.
+func TestConfirmedSelectionWakesTheTV(t *testing.T) {
+	h := connected(t)
+	h.tv.ReportCurrent("SAM-F0222")
+	h.svc.Refresh(context.Background())
+	h.waitFor(t, "the stale report", func(s *corev1.Status) bool { return s.GetSelectedArt().GetContentId() == "SAM-F0222" })
+	if _, err := h.svc.SelectArt(context.Background(), "SAM-S2705"); err != nil {
+		t.Fatal(err)
+	}
+	h.waitFor(t, "a confirmed selection", func(s *corev1.Status) bool {
+		return s.GetSelectedArt().GetContentId() == "SAM-S2705" && s.GetSelectedArt().GetConfirmed()
+	})
+	time.Sleep(2100 * time.Millisecond)
+	h.svc.Refresh(context.Background())
+	if sel := h.svc.Status().GetSelectedArt(); sel.GetContentId() != "SAM-S2705" || !sel.GetConfirmed() {
+		t.Fatalf("the stale report replaced a confirmed selection: %v", sel)
+	}
+
+	for _, tt := range []struct {
+		name    string
+		artMode bool
+		want    []string
+	}{
+		{"motion-sleep", true, []string{"select_image:SAM-S2705"}},
+		{"power-off standby", false, []string{"dial_remote", "key:KEY_POWER", "select_image:SAM-S2705"}},
+	} {
+		h.tv.SetPower(fake.PowerStandby, tt.artMode)
+		h.tv.ResetCalls()
+		if _, err := h.svc.ShowArt(context.Background(), ""); err != nil {
+			t.Fatal(err)
+		}
+		got := slices.DeleteFunc(commands(h.tv.Calls()), func(c string) bool { return c == "dial_remote" })
+		want := slices.DeleteFunc(slices.Clone(tt.want), func(c string) bool { return c == "dial_remote" })
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: commands = %q, want %q", tt.name, got, want)
+		}
+	}
+
+	restarted, err := New(h.svc.opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := restarted.load(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if sel := restarted.Status().GetSelectedArt(); sel.GetContentId() != "SAM-S2705" || !sel.GetConfirmed() {
+		t.Errorf("after restart: %v", sel)
+	}
+}
+
+func TestLegacySelectionRecordIsUnconfirmed(t *testing.T) {
+	h := newHarness(t, setup{token: fake.Token, before: func(ctx context.Context, st *MemoryStore) {
+		st.SetSelection(ctx, []byte(`{"content_id":"SAM-S2703","reported":"SAM-S2701","pending":["SAM-S2702"]}`))
+	}})
+	if err := h.svc.load(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if sel := h.svc.Status().GetSelectedArt(); sel.GetContentId() != "SAM-S2703" || sel.GetConfirmed() {
+		t.Errorf("legacy record = %v", sel)
+	}
+	h.tv.ReportCurrent("SAM-S2705")
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { h.svc.Run(ctx); close(done) }()
+	defer func() { cancel(); <-done }()
+	h.waitFor(t, "the report replacing the unconfirmed legacy record", isSelected("SAM-S2705", false))
 }

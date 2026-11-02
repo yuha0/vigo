@@ -121,3 +121,34 @@ describe("Integrations navigation", () => {
     expect(await screen.findByRole("heading", { name: "Apple Home", level: 1 })).toBeInTheDocument();
   });
 });
+
+describe("Unconfirmed selection", () => {
+  it("doesn't present the TV's unconfirmed report as the selection", async () => {
+    renderApp("/", { scenario: "unconfirmed" });
+    const card = await screen.findByTestId("tv-card");
+    await waitFor(() => expect(card).toHaveAttribute("data-state", "showing-art"));
+    const preview = within(card).getByTestId("tv-preview");
+    expect(within(preview).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(preview).queryByText("Selected")).not.toBeInTheDocument();
+    expect(within(preview).queryByText(/SAM-F0206/)).not.toBeInTheDocument();
+    expect(within(preview).getByText("vigo doesn't know which artwork is on screen yet")).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Choose artwork" })).toHaveAttribute("href", "/gallery");
+  });
+
+  it("confirms once a selection is made in the Gallery", async () => {
+    const { user, backend } = renderApp("/gallery", { scenario: "unconfirmed" });
+    await screen.findByRole("list", { name: "Artworks" });
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "SAM-F0206");
+    const reported = await screen.findByRole("button", { name: "SAM-F0206" });
+    expect(reported).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByText("Selected")).not.toBeInTheDocument();
+
+    await user.click(reported);
+    expect(await screen.findByRole("button", { name: "SAM-F0206, selected" })).toHaveAttribute("aria-pressed", "true");
+    expect(backend.tv.status.selectedArt?.confirmed).toBe(true);
+
+    await user.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Home" }));
+    const preview = await screen.findByTestId("tv-preview");
+    expect(within(preview).getByRole("img", { name: "Selected artwork SAM-F0206" })).toBeInTheDocument();
+  });
+});

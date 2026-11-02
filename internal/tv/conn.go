@@ -235,7 +235,8 @@ func (s *Service) setSelected(sel *corev1.SelectedArt) {
 	changed := false
 	s.update(func(st *state) {
 		if st.selected == nil || st.selected.ContentId != sel.ContentId ||
-			st.selected.MatteId != sel.MatteId || st.selected.PortraitMatteId != sel.PortraitMatteId {
+			st.selected.MatteId != sel.MatteId || st.selected.PortraitMatteId != sel.PortraitMatteId ||
+			st.selected.Confirmed != sel.Confirmed {
 			st.selected = sel
 			changed = true
 		}

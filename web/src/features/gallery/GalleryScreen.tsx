@@ -17,6 +17,7 @@ import { UploadDialog } from "@/features/gallery/UploadDialog";
 import { useSelectArtwork } from "@/features/gallery/useSelectArtwork";
 import { describeError } from "@/lib/errors";
 import { useStatus } from "@/lib/queries";
+import { confirmedSelection } from "@/lib/tv-state";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -31,7 +32,8 @@ function useDebounced<T>(value: T, ms: number): T {
 
 export function GalleryScreen() {
   const { data: status } = useStatus();
-  const selectedId = status?.selectedArt?.contentId ?? "";
+  // Only a selection the TV confirmed gets the "Selected" badge.
+  const selectedId = confirmedSelection(status);
   const { selectArtwork, pendingId } = useSelectArtwork();
 
   const [tags, setTags] = useState<string[]>([]);

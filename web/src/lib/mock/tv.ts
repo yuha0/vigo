@@ -75,7 +75,7 @@ export class MockTv {
     this.config = create(ConfigSchema, { tvHost: "192.168.40.21", tvPort: 8002, clientName: "vigo" });
     this.status = create(StatusSchema, {
       device: fixtures.device(),
-      selectedArt: create(SelectedArtSchema, { contentId: "SAM-F0206", matteId: "none", portraitMatteId: "shadowbox_polar" }),
+      selectedArt: create(SelectedArtSchema, { contentId: "SAM-F0206", matteId: "none", portraitMatteId: "shadowbox_polar", confirmed: true }),
       replica: "vigo-core-7c9f6d4b8-x2lqp",
     });
     this.pairing = create(PairingSchema, { state: PairingState.PAIRED });
@@ -88,8 +88,17 @@ export class MockTv {
     this.pairing = create(PairingSchema, {
       state: shape.connection === ConnectionState.NOT_PAIRED ? PairingState.UNPAIRED : PairingState.PAIRED,
     });
+    // "unconfirmed" mimics a fresh vigo that only has the TV's possibly stale get_current_artwork report.
+    const prev = this.status.selectedArt;
+    const selectedArt = create(SelectedArtSchema, {
+      contentId: prev?.contentId,
+      matteId: prev?.matteId,
+      portraitMatteId: prev?.portraitMatteId,
+      confirmed: s !== "unconfirmed",
+    });
     this.patch(
       {
+        selectedArt,
         power: shape.power,
         artMode: shape.artMode,
         connection: shape.connection,
@@ -288,6 +297,7 @@ export class MockTv {
         contentId,
         matteId: this.status.selectedArt?.matteId,
         portraitMatteId: this.status.selectedArt?.portraitMatteId,
+        confirmed: true,
       }),
     });
     this.emit({ case: "artSelected", value: clone(SelectedArtSchema, this.status.selectedArt!) });

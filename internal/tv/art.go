@@ -318,6 +318,7 @@ func (s *Service) DeleteArt(ctx context.Context, ids []string) ([]string, error)
 
 func (s *Service) forgetArtwork(ctx context.Context, id string) {
 	s.thumbs.remove(id)
+	s.selectionDeleted(ctx, id)
 	if h := s.libraryHook(); h != nil {
 		h.TVContentDeleted(id)
 	}

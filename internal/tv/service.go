@@ -139,10 +139,9 @@ type Service struct {
 	refreshMu    sync.Mutex
 	lastRefresh  time.Time
 
-	selMu     sync.Mutex
+	selMu sync.Mutex
+	// selection is the confirmed selection, or nil.
 	selection *selectionRecord
-	// reported is the latest get_current_artwork value.
-	reported string
 
 	modelMu       sync.Mutex
 	modelObserved string

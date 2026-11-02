@@ -1,4 +1,5 @@
 import {
+  CircleHelp,
   CloudOff,
   Link2Off,
   LoaderCircle,
@@ -14,7 +15,7 @@ import {
 import { ArtImage } from "@/components/ArtImage";
 import type { Status } from "@/gen/vigo/core/v1/core_pb";
 import { useArtApi } from "@/lib/backend";
-import { tvState, type TvStateKind } from "@/lib/tv-state";
+import { confirmedSelection, tvState, type TvStateKind } from "@/lib/tv-state";
 import { cn } from "@/lib/utils";
 
 type Placeholder = { icon: LucideIcon; caption: string; screen: string; spin?: boolean };
@@ -42,12 +43,12 @@ const placeholders: Record<Exclude<TvStateKind, "showing-art">, Placeholder> = {
 export function TvPreview({ status, offline = false, className }: { status: Status | null; offline?: boolean; className?: string }) {
   const art = useArtApi();
   const state = tvState(status);
-  const selectedId = status?.selectedArt?.contentId ?? "";
+  const selectedId = confirmedSelection(status);
   const showArt = state.kind === "showing-art" && !!selectedId;
   const p: Placeholder = offline
     ? { icon: CloudOff, caption: "vigo is unreachable", screen: "bg-neutral-900" }
     : state.kind === "showing-art"
-      ? { icon: TriangleAlert, caption: "No artwork selected", screen: "bg-neutral-900" }
+      ? { icon: CircleHelp, caption: "vigo doesn't know which artwork is on screen yet", screen: "bg-neutral-900" }
       : placeholders[state.kind];
 
   return (
@@ -74,6 +75,8 @@ export function TvPreview({ status, offline = false, className }: { status: Stat
           <>
             Selected · <span className="font-mono text-[0.8125rem]">{selectedId}</span>
           </>
+        ) : state.kind === "showing-art" && !offline ? (
+          "The TV doesn't reliably report it until you choose one in vigo."
         ) : selectedId && state.canShowArt ? (
           <>
             Show art brings back <span className="font-mono text-[0.8125rem]">{selectedId}</span>

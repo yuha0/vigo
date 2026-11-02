@@ -9,6 +9,7 @@ export const scenarios = [
   "no-art-host",
   "standby-replica",
   "model-changed",
+  "unconfirmed",
 ] as const;
 
 export type Scenario = (typeof scenarios)[number];

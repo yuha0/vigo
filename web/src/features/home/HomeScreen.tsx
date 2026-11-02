@@ -9,7 +9,7 @@ import { WarningsBanner } from "@/components/WarningsBanner";
 import { TvPreview } from "@/features/home/TvPreview";
 import { describeError } from "@/lib/errors";
 import { useShowArt, useStatus } from "@/lib/queries";
-import { tvState, type TvStateKind } from "@/lib/tv-state";
+import { confirmedSelection, tvState, type TvStateKind } from "@/lib/tv-state";
 import { cn } from "@/lib/utils";
 
 const dot: Partial<Record<TvStateKind, string>> = {
@@ -60,6 +60,11 @@ export function HomeScreen() {
               )}
               {state.kind === "showing-art" && (
                 <Button size="lg" asChild>
+                  <Link to="/gallery">Choose artwork</Link>
+                </Button>
+              )}
+              {state.kind !== "showing-art" && state.controllable && !confirmedSelection(status) && (
+                <Button size="lg" variant="outline" asChild>
                   <Link to="/gallery">Choose artwork</Link>
                 </Button>
               )}

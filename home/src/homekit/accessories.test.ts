@@ -97,7 +97,7 @@ describe("television", () => {
     await expect(id.handleSetRequest(3)).rejects.toBe(HAPStatus.INVALID_VALUE_IN_REQUEST);
   });
 
-  it("maps every RemoteKey in the design and ignores the rest", async () => {
+  it("maps the RemoteKeys in the design, accepts INFORMATION silently and ignores the rest", async () => {
     const { tv, ctx, metrics } = await setup();
     const { accessory } = buildTelevision(ctx, "The Frame");
     const rk = char(accessory, Service.Television, Characteristic.RemoteKey);
@@ -111,7 +111,6 @@ describe("television", () => {
       [R.BACK, "KEY_RETURN"],
       [R.EXIT, "KEY_EXIT"],
       [R.PLAY_PAUSE, "KEY_PLAY"],
-      [R.INFORMATION, "KEY_INFO"],
     ];
     expect([...REMOTE_KEYS.entries()].sort()).toEqual([...expected].sort());
     for (const [hk] of expected) await rk.handleSetRequest(hk);
@@ -120,6 +119,11 @@ describe("television", () => {
     await rk.handleSetRequest(R.REWIND);
     expect(calls(tv, "sendKey")).toHaveLength(expected.length);
     expect(await writes(metrics, "television", "ignored")).toBe(1);
+
+    // The (i) button: accepted without an error, and nothing reaches the TV.
+    await expect(rk.handleSetRequest(R.INFORMATION)).resolves.toBeUndefined();
+    expect(calls(tv, "sendKey")).toHaveLength(expected.length);
+    expect(await writes(metrics, "television", "ignored")).toBe(2);
   });
 
   it("maps the speaker to volume and mute keys", async () => {

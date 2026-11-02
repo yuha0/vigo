@@ -20,8 +20,13 @@ export const REMOTE_KEYS: ReadonlyMap<number, string> = new Map([
   [R.BACK, "KEY_RETURN"],
   [R.EXIT, "KEY_EXIT"],
   [R.PLAY_PAUSE, "KEY_PLAY"],
-  [R.INFORMATION, "KEY_INFO"],
 ]);
+
+/**
+ * Accepted but sends nothing. Apple's remote always shows the (i) button, so pressing it must
+ * not surface as an error.
+ */
+export const SILENT_REMOTE_KEYS: ReadonlySet<number> = new Set([R.INFORMATION]);
 
 export function volumeKey(selector: number): string | undefined {
   if (selector === Characteristic.VolumeSelector.INCREMENT) return "KEY_VOLUP";
