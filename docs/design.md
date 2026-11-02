@@ -80,7 +80,7 @@ vigo-home serves Connect on `:8081` (mTLS). `/healthz`, `/readyz` and `/metrics`
 
 ### Live updates
 
-`TVService.WatchEvents` is a server stream. Its first message is always a full `Status`; after that it carries deltas and fresh `Status` snapshots whenever any status field changes. Clients reconnect with backoff on stream end and treat the first message after reconnect as authoritative.
+`TVService.WatchEvents` is a server stream. Its first message is always a full `Status`; after that it carries deltas and fresh `Status` snapshots whenever any status field changes. Clients reconnect with backoff on stream end and treat the first message after reconnect as authoritative. A stream that has carried nothing for a minute gets the current `Status` again, so proxies with an idle timeout (Envoy's default is 5 minutes) keep it open. Proxies must not put a request timeout on it.
 
 ### Trust
 

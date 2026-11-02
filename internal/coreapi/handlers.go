@@ -3,6 +3,7 @@ package coreapi
 import (
 	"context"
 	"errors"
+	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -36,6 +37,11 @@ func (h *handlers) Refresh(ctx context.Context, _ *connect.Request[corev1.Refres
 	return connect.NewResponse(&corev1.RefreshResponse{Status: st}), nil
 }
 
+// watchHeartbeat is how long a WatchEvents stream may stay silent before the
+// current Status is sent again. Proxies close streams that carry no data for a
+// while (Envoy's default stream idle timeout is 5 minutes).
+var watchHeartbeat = time.Minute
+
 func (h *handlers) WatchEvents(ctx context.Context, _ *connect.Request[corev1.WatchEventsRequest], stream *connect.ServerStream[corev1.WatchEventsResponse]) error {
 	first, events, cancel := h.tv.Subscribe()
 	defer cancel()
@@ -46,6 +52,8 @@ func (h *handlers) WatchEvents(ctx context.Context, _ *connect.Request[corev1.Wa
 	if err != nil {
 		return err
 	}
+	beat := time.NewTicker(watchHeartbeat)
+	defer beat.Stop()
 	for {
 		select {
 		case <-ctx.Done():
@@ -55,6 +63,15 @@ func (h *handlers) WatchEvents(ctx context.Context, _ *connect.Request[corev1.Wa
 				return nil
 			}
 			if err := stream.Send(ev); err != nil {
+				return err
+			}
+			beat.Reset(watchHeartbeat)
+		case <-beat.C:
+			err := stream.Send(&corev1.WatchEventsResponse{
+				Time:  timestamppb.Now(),
+				Event: &corev1.WatchEventsResponse_Status{Status: h.tv.Status()},
+			})
+			if err != nil {
 				return err
 			}
 		}

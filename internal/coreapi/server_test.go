@@ -261,6 +261,28 @@ func TestStandbyReplicaIsUnavailable(t *testing.T) {
 	}
 }
 
+func TestWatchEventsHeartbeat(t *testing.T) {
+	defer func(d time.Duration) { watchHeartbeat = d }(watchHeartbeat)
+	watchHeartbeat = 50 * time.Millisecond
+	e := newEnv(t, envOpts{})
+	client := corev1connect.NewTVServiceClient(http.DefaultClient, e.url)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	stream, err := client.WatchEvents(ctx, connect.NewRequest(&corev1.WatchEventsRequest{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stream.Close()
+	for i := range 3 {
+		if !stream.Receive() {
+			t.Fatalf("message %d: stream ended: %v", i, stream.Err())
+		}
+		if stream.Msg().GetStatus() == nil {
+			t.Fatalf("message %d = %v, want a Status", i, stream.Msg())
+		}
+	}
+}
+
 func TestWatchEvents(t *testing.T) {
 	e := newEnv(t, envOpts{})
 	clients := map[string]corev1connect.TVServiceClient{

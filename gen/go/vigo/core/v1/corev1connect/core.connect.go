@@ -86,6 +86,8 @@ type TVServiceClient interface {
 	GetStatus(context.Context, *connect.Request[v1.GetStatusRequest]) (*connect.Response[v1.GetStatusResponse], error)
 	// The first message is always a full Status snapshot. Clients reconnect on
 	// stream end and treat the first message after reconnecting as authoritative.
+	// A stream that has been silent for a minute gets the current Status again,
+	// so proxies do not close it as idle.
 	WatchEvents(context.Context, *connect.Request[v1.WatchEventsRequest]) (*connect.ServerStreamForClient[v1.WatchEventsResponse], error)
 	// Re-reads power, art mode and the selected artwork from the TV instead of
 	// waiting for the next poll or event. Clients call it when a person starts
@@ -227,6 +229,8 @@ type TVServiceHandler interface {
 	GetStatus(context.Context, *connect.Request[v1.GetStatusRequest]) (*connect.Response[v1.GetStatusResponse], error)
 	// The first message is always a full Status snapshot. Clients reconnect on
 	// stream end and treat the first message after reconnecting as authoritative.
+	// A stream that has been silent for a minute gets the current Status again,
+	// so proxies do not close it as idle.
 	WatchEvents(context.Context, *connect.Request[v1.WatchEventsRequest], *connect.ServerStream[v1.WatchEventsResponse]) error
 	// Re-reads power, art mode and the selected artwork from the TV instead of
 	// waiting for the next poll or event. Clients call it when a person starts
