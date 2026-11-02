@@ -1,5 +1,5 @@
 // End-to-end check of the Gallery against a running vigo-core, through the Vite dev proxy.
-// Usage: E2E_BASE_URL=http://localhost:5173 node e2e/gallery.e2e.mjs
+// Usage: E2E_BASE_URL=http://localhost:5173 E2E_PASSWORD=… node e2e/gallery.e2e.mjs
 // It changes the library: it uploads, crops and deletes one generated image under "e2e/".
 import { mkdirSync } from "node:fs";
 
@@ -33,6 +33,17 @@ const rpc = async (method, body = {}) =>
   );
 
 await page.goto(`${base}/gallery`);
+const signIn = page.getByRole("button", { name: "Sign in" });
+const setup = page.getByRole("button", { name: "Set password" });
+await Promise.race([signIn.waitFor(), setup.waitFor(), page.getByRole("navigation", { name: "Main" }).waitFor()]);
+if (await setup.count()) {
+  await page.getByLabel("Password", { exact: true }).fill(process.env.E2E_PASSWORD);
+  await page.getByLabel("Confirm password", { exact: true }).fill(process.env.E2E_PASSWORD);
+  await setup.click();
+} else if (await signIn.count()) {
+  await page.getByLabel("Password", { exact: true }).fill(process.env.E2E_PASSWORD);
+  await signIn.click();
+}
 
 await check("lists artworks", async () => {
   await page.getByRole("list", { name: "Artworks" }).waitFor();

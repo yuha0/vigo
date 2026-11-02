@@ -51,7 +51,7 @@ independently, and a HomeKit crash never drops TV control.
 
 | Listener | Component | Clients | Authentication |
 |---|---|---|---|
-| `:8080` HTTP | vigo-core | browsers, through a private ingress or gateway | none (see Trust) |
+| `:8080` HTTP | vigo-core | browsers, through a private ingress or gateway | password session (see Authentication) |
 | `:8443` HTTPS | vigo-core | vigo-home, other vigo-core replicas | mTLS |
 | `:8081` HTTPS | vigo-home | vigo-core | mTLS |
 
@@ -109,8 +109,8 @@ with backoff on stream end and treat the first message after reconnect as author
 
 ### Trust
 
-- **Browsers:** no authentication in the application. `:8080` is reachable only through the
-  private network. Do not expose it publicly.
+- **Browsers:** a single password and a session cookie; see Authentication below. `:8080` is still
+  meant for a private network; the password is a second line, not a reason to expose it.
 - **Between components: mutual TLS.** Every component gets `--pki-dir`, a directory holding
   `tls.crt`, `tls.key` and `ca.crt` (the layout of a cert-manager Certificate Secret; any PKI can
   produce it). Peers must chain to `ca.crt`, and are **authorized by URI SAN**, never by hostname:
@@ -130,6 +130,39 @@ with backoff on stream end and treat the first message after reconnect as author
   CA `Certificate`, which backs a CA `Issuer` that signs the leaves, all in the `vigo` namespace.
   A namespaced Issuer can only be referenced by Certificates in its own namespace, so a compromise of another namespace
   cannot mint vigo identities, and nothing cluster-wide is involved beyond cert-manager itself.
+
+#### Authentication
+
+The browser listener (`:8080`) is protected by one password, with no username
+(`vigo.core.v1.AuthService`). `:8443` is mTLS and `:9090` (probes, metrics) stays open.
+
+- **First visitor sets it.** While no password is stored, the web UI offers `SetupPassword`.
+  It succeeds once: the password row is a single-row insert-if-absent, so concurrent first visitors
+  on any replicas cannot both win. Afterwards it is `failed_precondition`. `vigo-core
+  reset-password` deletes the password and every session, and the next visitor sets a new one.
+- **Storage.** argon2id (64 MiB, 3 passes, 4 lanes, 16-byte salt, 32-byte key) as a PHC string
+  carrying its own parameters, in `web_password`. Passwords are 12 characters to 1024 bytes
+  (`GetAuthState.min_password_length`).
+- **Sessions.** A random 32-byte token in cookie `vigo_session` (`HttpOnly`, `Secure`,
+  `SameSite=Strict`, `Path=/`); `web_sessions` stores only its SHA-256. Expiry slides to 30 days
+  after the last use, written at most once an hour. Logout deletes the session; `ChangePassword`
+  needs the current password and ends every other session.
+- **Enforcement.** Without a valid session every RPC and HTTP endpoint on `:8080` answers
+  `unauthenticated` (HTTP 401, `{"code","message"}`), including `/art/*`, `/library/*`,
+  `/sources/*` and the HomeService proxy. Open: `AuthService.GetAuthState`, `SetupPassword` and
+  `Login`, and the web UI's static files with the `index.html` fallback, so the sign-in page can
+  load. Any replica checks sessions (a database lookup) and serves `AuthService` itself; other
+  API calls are then forwarded to the leader as usual, cookies intact.
+- **Guessing.** `Login`, `SetupPassword` and `ChangePassword` share a token bucket per client
+  address (5 attempts, then one per 10 seconds) and a global one, per replica; over the limit is
+  `resource_exhausted`. The client address is the connection's, or `X-Forwarded-For` only from a
+  `--trusted-proxy` network. A wrong password always gets the same answer, and comparisons are
+  constant-time.
+- **Cross-site requests.** `SameSite=Strict` is the defence; in addition, state-changing requests
+  (every RPC is a POST, as is upload) need an `Origin`, or else `Referer`, naming the request's host
+  or a `--public-origin`, otherwise 403.
+- Passwords and tokens are never logged. Metrics: `vigo_auth_logins_total{outcome}` and
+  `vigo_auth_sessions`.
 
 ## TV semantics the API commits to
 

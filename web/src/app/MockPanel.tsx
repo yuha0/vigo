@@ -11,6 +11,7 @@ import { homeModes, scenarios, type HomeMode, type MockControl, type Scenario } 
 export function MockPanel({ control }: { control: MockControl }) {
   const [scenario, setScenario] = useState<Scenario>(control.scenario);
   const [home, setHome] = useState<HomeMode>(control.homeMode);
+  const [rateLimited, setRateLimited] = useState(false);
 
   return (
     <Popover.Root>
@@ -68,6 +69,23 @@ export function MockPanel({ control }: { control: MockControl }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid gap-1.5 rounded-xl bg-muted/60 px-3 py-2.5 text-sm">
+              <span className="text-muted-foreground">Password</span>
+              <code className="font-mono select-all">{control.devPassword}</code>
+            </div>
+            <Button variant="outline" onClick={() => control.expireSession()}>
+              Expire session
+            </Button>
+            <Button
+              variant="outline"
+              aria-pressed={rateLimited}
+              onClick={() => {
+                control.setRateLimited(!rateLimited);
+                setRateLimited(!rateLimited);
+              }}
+            >
+              {rateLimited ? "Stop rate limiting" : "Rate-limit sign-in"}
+            </Button>
             <Button variant="outline" onClick={() => control.dropStreams()}>
               Drop live stream
             </Button>

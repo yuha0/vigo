@@ -23,6 +23,7 @@ import (
 	"github.com/yuha0/vigo/gen/go/vigo/core/v1/corev1connect"
 	"github.com/yuha0/vigo/gen/go/vigo/home/v1/homev1connect"
 	"github.com/yuha0/vigo/gen/go/vigo/integration/v1/integrationv1connect"
+	"github.com/yuha0/vigo/internal/auth"
 	"github.com/yuha0/vigo/internal/library"
 	"github.com/yuha0/vigo/internal/metrics"
 	"github.com/yuha0/vigo/internal/pki"
@@ -59,6 +60,9 @@ type Options struct {
 	// integration's leader; HomeTLS is the client configuration for it.
 	HomeEndpoint func(ctx context.Context) (string, error)
 	HomeTLS      *tls.Config
+
+	// Auth protects the public listener; nil leaves it open (tests).
+	Auth *auth.Service
 
 	// Integration is served on the internal listener only.
 	Integration integrationv1connect.IntegrationServiceHandler
@@ -119,17 +123,30 @@ func isAPI(path string) bool {
 }
 
 // Public is the browser listener (:8080): the API, the HomeService proxy
-// and the web UI.
+// and the web UI. With Auth set, everything but the web UI and the
+// signed-out AuthService calls needs a session.
 func (s *Server) Public() http.Handler {
+	protect := func(h http.Handler) http.Handler { return h }
 	mux := http.NewServeMux()
-	mux.Handle("/"+homev1connect.HomeServiceName+"/", s.homeProxy())
+	if a := s.opts.Auth; a != nil {
+		protect = a.Require
+		// Served locally on every replica: it needs only the database, and
+		// rate limiting must see the real client.
+		path, h := corev1connect.NewAuthServiceHandler(a)
+		mux.Handle(path, a.CheckOrigin(h))
+	}
+	api := protect(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Del(forwardedHeader)
+		s.api.ServeHTTP(w, r)
+	}))
+	web := webHandler(s.opts.Web)
+	mux.Handle("/"+homev1connect.HomeServiceName+"/", protect(s.homeProxy()))
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isAPI(r.URL.Path) {
-			r.Header.Del(forwardedHeader)
-			s.api.ServeHTTP(w, r)
+			api.ServeHTTP(w, r)
 			return
 		}
-		webHandler(s.opts.Web).ServeHTTP(w, r)
+		web.ServeHTTP(w, r)
 	}))
 	return mux
 }

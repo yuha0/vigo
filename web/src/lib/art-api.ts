@@ -2,6 +2,7 @@ import { fromJson } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 
 import { LibraryArtworkSchema, type LibraryArtwork } from "@/gen/vigo/core/v1/library_pb";
+import { notifySessionLost } from "@/lib/session";
 
 export type UploadOptions = {
   /** Directory relative to the source root; empty means the root. */
@@ -38,6 +39,7 @@ function errorFromBody(status: number, text: string): ConnectError {
   }
   const byStatus: Record<number, Code> = {
     400: Code.InvalidArgument,
+    401: Code.Unauthenticated,
     404: Code.NotFound,
     409: Code.AlreadyExists,
     413: Code.ResourceExhausted,
@@ -76,7 +78,9 @@ export function createHttpArtApi(baseUrl = ""): ArtApi {
               reject(ConnectError.from(err, Code.Internal));
             }
           } else {
-            reject(errorFromBody(xhr.status, xhr.responseText));
+            const err = errorFromBody(xhr.status, xhr.responseText);
+            if (xhr.status === 401 || err.code === Code.Unauthenticated) notifySessionLost();
+            reject(err);
           }
         };
         xhr.onerror = () => reject(new ConnectError("Upload failed: vigo could not be reached.", Code.Unavailable));

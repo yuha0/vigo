@@ -151,3 +151,34 @@ func TestImportTokenAndAckModel(t *testing.T) {
 		t.Errorf("ack-model: %s", out)
 	}
 }
+
+func TestResetPassword(t *testing.T) {
+	e := dbtest.Open(t)
+	ctx := context.Background()
+	if _, err := e.DB.Pool().Exec(ctx, `INSERT INTO web_password (hash) VALUES ('$argon2id$v=19$m=1,t=1,p=1$AA$AA')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.DB.Pool().Exec(ctx, `INSERT INTO web_sessions (token_hash, expires_at) VALUES ('\x01', now() + interval '1 day'), ('\x02', now() + interval '1 day')`); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	url := os.Getenv(dbtest.EnvURL)
+	sep := "?"
+	if strings.Contains(url, "?") {
+		sep = "&"
+	}
+	urlFile := filepath.Join(dir, "url")
+	keyFile := filepath.Join(dir, "keyring.json")
+	os.WriteFile(urlFile, []byte(url+sep+"search_path="+e.Options.Schema), 0o600)
+	os.WriteFile(keyFile, e.Keyring, 0o600)
+
+	out := run(t, "reset-password", "--database-url-file", urlFile, "--keyring-file", keyFile)
+	if !strings.Contains(out, "next visitor") {
+		t.Errorf("output = %q", out)
+	}
+	var passwords, sessions int
+	e.DB.Pool().QueryRow(ctx, `SELECT (SELECT count(*) FROM web_password), (SELECT count(*) FROM web_sessions)`).Scan(&passwords, &sessions)
+	if passwords != 0 || sessions != 0 {
+		t.Errorf("after reset: %d passwords, %d sessions", passwords, sessions)
+	}
+}

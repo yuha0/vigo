@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/yuha0/vigo/internal/auth"
 	"github.com/yuha0/vigo/internal/secretbox"
 )
 
@@ -94,6 +95,30 @@ func ackModelCommand(o *options) *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Acknowledged %d model(s).\n", n)
+			return nil
+		},
+	}
+}
+
+func resetPasswordCommand(o *options) *cobra.Command {
+	return &cobra.Command{
+		Use:   "reset-password",
+		Short: "Remove the web password and end every session; the next visitor sets a new password",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+			d, err := openDB(ctx, o.db)
+			if err != nil {
+				return err
+			}
+			defer d.Close()
+			if _, err := d.Migrate(ctx); err != nil {
+				return err
+			}
+			if err := auth.Reset(ctx, d.Pool()); err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "The web password is removed and every session ended. The next visitor to the web UI sets a new password.")
 			return nil
 		},
 	}

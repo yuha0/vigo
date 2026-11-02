@@ -1,10 +1,11 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { Suspense, useId, useState } from "react";
 import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 
 import { isGroup, navItems, type NavGroup } from "@/app/nav";
 import { LiveIndicator } from "@/components/LiveIndicator";
 import { Mark } from "@/components/Mark";
+import { useAuth } from "@/lib/auth";
 import { useStatus } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -65,10 +66,32 @@ function Rail({ hasWarnings }: { hasWarnings: boolean }) {
           ),
         )}
       </ul>
-      <div className="flex shrink-0 justify-center py-5 lg:justify-start lg:px-6">
-        <LiveIndicator className="flex-col gap-1 text-[0.625rem] lg:flex-row lg:gap-2 lg:text-xs" />
+      <div className="flex shrink-0 flex-col items-center gap-2 px-2 pt-2 pb-5 lg:items-stretch lg:px-3">
+        <SignOutButton />
+        <div className="flex justify-center pt-2 lg:justify-start lg:px-3">
+          <LiveIndicator className="flex-col gap-1 text-[0.625rem] lg:flex-row lg:gap-2 lg:text-xs" />
+        </div>
       </div>
     </nav>
+  );
+}
+
+function SignOutButton() {
+  const { logout } = useAuth();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        void logout().finally(() => setBusy(false));
+      }}
+      className={cn(railItem, railIdle)}
+    >
+      <LogOut className="size-[1.375rem] lg:size-5" strokeWidth={1.75} aria-hidden="true" />
+      <span className="max-w-full truncate leading-tight">Sign out</span>
+    </button>
   );
 }
 

@@ -12,6 +12,7 @@ import {
 } from "@/gen/vigo/core/v1/core_pb";
 import { useClient } from "@/lib/backend";
 import { qk, setStatus } from "@/lib/queries";
+import { isUnauthenticated, notifySessionLost } from "@/lib/session";
 
 export type LiveState = "connecting" | "live" | "reconnecting";
 
@@ -127,8 +128,13 @@ export function LiveProvider({ children }: { children: ReactNode }) {
             }
             applyEvent(qc, msg);
           }
-        } catch {
-          // Stream errors are expected (server restarts, network loss); retry below.
+        } catch (err) {
+          // The auth gate unmounts this provider, which stops the loop.
+          if (isUnauthenticated(err)) {
+            notifySessionLost();
+            return;
+          }
+          // Other stream errors are expected (server restarts, network loss); retry below.
         }
         if (stop.signal.aborted) return;
         setState("reconnecting");

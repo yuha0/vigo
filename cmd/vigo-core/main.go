@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -23,6 +24,7 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/yuha0/vigo/internal/auth"
 	"github.com/yuha0/vigo/internal/coreapi"
 	"github.com/yuha0/vigo/internal/db"
 	"github.com/yuha0/vigo/internal/integration"
@@ -62,6 +64,8 @@ type options struct {
 	sources          []string
 	cacheDir         string
 	sourceSync       time.Duration
+	trustedProxies   []string
+	publicOrigins    []string
 	fakeTV           bool
 	logLevel         string
 }
@@ -117,9 +121,11 @@ func newCommand() *cobra.Command {
 	f.StringArrayVar(&o.sources, "source", nil, "art source URL, repeatable, e.g. file:///srv/art?id=nas (add readonly=true to never write)")
 	f.StringVar(&o.cacheDir, "cache-dir", filepath.Join(os.TempDir(), "vigo-core-cache"), "directory for generated thumbnails and previews; emptied at startup")
 	f.DurationVar(&o.sourceSync, "source-sync-interval", 10*time.Minute, "interval between reconciliation passes of each source")
+	f.StringArrayVar(&o.trustedProxies, "trusted-proxy", nil, "CIDR of a reverse proxy whose X-Forwarded-For is trusted for rate limiting, repeatable")
+	f.StringArrayVar(&o.publicOrigins, "public-origin", nil, "origin browsers use, e.g. https://vigo.example.com, when a proxy rewrites Host; repeatable")
 	f.BoolVar(&o.fakeTV, "fake-tv", false, "use an in-memory simulated TV instead of a real one")
 
-	cmd.AddCommand(importTokenCommand(&o), ackModelCommand(&o), keyringCommand())
+	cmd.AddCommand(importTokenCommand(&o), ackModelCommand(&o), resetPasswordCommand(&o), keyringCommand())
 	return cmd
 }
 
@@ -285,10 +291,27 @@ func serve(ctx context.Context, o options, log *slog.Logger) error {
 			"writable", source.CanWrite(s), "editable", source.CanEdit(s))
 	}
 
+	var trusted []netip.Prefix
+	for _, c := range o.trustedProxies {
+		p, err := netip.ParsePrefix(c)
+		if err != nil {
+			return fmt.Errorf("--trusted-proxy %q: %w", c, err)
+		}
+		trusted = append(trusted, p)
+	}
+	authn := auth.New(auth.Options{
+		Pool:           d.Pool(),
+		Metrics:        m,
+		Log:            log.With("component", "auth"),
+		TrustedProxies: trusted,
+		PublicOrigins:  o.publicOrigins,
+	})
+
 	var ready atomic.Bool
 	apiOpts := coreapi.Options{
 		TV:      svc,
 		Library: lib,
+		Auth:    authn,
 		Metrics: m,
 		Log:     log.With("component", "api"),
 		Ready:   ready.Load,

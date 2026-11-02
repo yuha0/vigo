@@ -5,6 +5,7 @@ import { createContext, use, useMemo, type ReactNode } from "react";
 
 import { createHttpArtApi, type ArtApi } from "@/lib/art-api";
 import type { MockControl } from "@/lib/mock/control";
+import { sessionInterceptor } from "@/lib/session";
 
 export type Backend = {
   transport: Transport;
@@ -15,7 +16,7 @@ export type Backend = {
 
 export function createHttpBackend(baseUrl = window.location.origin): Backend {
   return {
-    transport: createConnectTransport({ baseUrl, useBinaryFormat: true }),
+    transport: createConnectTransport({ baseUrl, useBinaryFormat: true, interceptors: [sessionInterceptor] }),
     art: createHttpArtApi(""),
   };
 }

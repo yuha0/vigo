@@ -11,6 +11,9 @@ const backendPaths = ["^/vigo\\.core\\.v1\\.", "^/vigo\\.home\\.v1\\.", "^/art(/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const target = env.VIGO_CORE_URL || "http://localhost:8080";
+  // No changeOrigin: vigo-core rejects state-changing requests whose Origin
+  // doesn't match Host, so the browser's Host (the dev server) must pass through.
+  const proxy = Object.fromEntries(backendPaths.map((p) => [p, { target }]));
 
   return {
     resolve: {
@@ -50,6 +53,8 @@ export default defineConfig(({ mode }) => {
               options: {
                 cacheName: "library-immutable",
                 expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 90 },
+                // Never keep a 401 (signed out) or any other error in place of the image.
+                cacheableResponse: { statuses: [200] },
               },
             },
             {
@@ -57,6 +62,7 @@ export default defineConfig(({ mode }) => {
               handler: "StaleWhileRevalidate",
               options: {
                 cacheName: "thumbnails",
+                cacheableResponse: { statuses: [200] },
                 expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 },
               },
             },
@@ -64,12 +70,8 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
-    server: {
-      proxy: Object.fromEntries(backendPaths.map((p) => [p, { target, changeOrigin: true }])),
-    },
-    preview: {
-      proxy: Object.fromEntries(backendPaths.map((p) => [p, { target, changeOrigin: true }])),
-    },
+    server: { proxy },
+    preview: { proxy },
     build: {
       outDir: "dist",
       emptyOutDir: true,

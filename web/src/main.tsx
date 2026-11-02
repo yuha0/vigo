@@ -15,8 +15,10 @@ async function createBackend(): Promise<Backend> {
   const scenario = scenarios.find((s) => s === params.get("scenario")) ?? "art";
   const homeMode = homeModes.find((m) => m === params.get("home")) ?? "online";
   const sources = (["default", "single", "read-only"] as const).find((s) => s === params.get("sources")) ?? "default";
+  const auth = (["setup", "login", "ok"] as const).find((a) => a === params.get("auth")) ?? "ok";
   return createMockBackend({
     scenario,
+    auth,
     homeMode,
     sources,
     latencyMs: 220,

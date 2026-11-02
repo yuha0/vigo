@@ -26,5 +26,10 @@ export interface MockControl {
   setHomeMode(m: HomeMode): void;
   /** Ends every open WatchEvents stream, to exercise reconnects. */
   dropStreams(): void;
+  /** The password the mock accepts. */
+  readonly devPassword: string;
+  /** Ends the session server-side, as an expiry or a sign-out elsewhere would. */
+  expireSession(): void;
+  setRateLimited(on: boolean): void;
   readonly sentKeys: readonly SentKey[];
 }

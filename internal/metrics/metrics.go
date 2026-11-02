@@ -42,6 +42,7 @@ type Metrics struct {
 	LibraryArtworks    *prometheus.GaugeVec
 	SourceSyncDuration *prometheus.HistogramVec
 	SourceSyncErrors   *prometheus.CounterVec
+	AuthLogins         *prometheus.CounterVec
 }
 
 // New creates the collectors and registers them, plus the Go and process
@@ -112,6 +113,10 @@ func New() *Metrics {
 			Help:    "Duration of reconciliation passes per source.",
 			Buckets: []float64{.1, .5, 1, 5, 15, 30, 60, 120, 300, 900},
 		}, []string{"source"}),
+		AuthLogins: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "vigo_auth_logins_total",
+			Help: "Browser sign-in attempts by outcome: ok, wrong_password or rate_limited.",
+		}, []string{"outcome"}),
 		SourceSyncErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "vigo_source_sync_errors_total",
 			Help: "Reconciliation passes that failed, e.g. an unreadable source root.",
@@ -123,7 +128,7 @@ func New() *Metrics {
 		m.PowerState, m.ArtMode, m.ConnectionState,
 		m.Requests, m.RequestDuration, m.SettingUnconfirmed, m.ProtocolErrors,
 		m.Reconnects, m.D2DBytes, m.D2DDuration, m.Leader, m.DBUp, m.IntegrationLeader,
-		m.LibraryArtworks, m.SourceSyncDuration, m.SourceSyncErrors,
+		m.LibraryArtworks, m.SourceSyncDuration, m.SourceSyncErrors, m.AuthLogins,
 	)
 	return m
 }
