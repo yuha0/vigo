@@ -40,7 +40,7 @@ vigo is not affiliated with or endorsed by Samsung or Apple.
 | vigo-core | `ghcr.io/yuha0/vigo-core` | Go service: the TV connection, the API, the web app, the database |
 | vigo-home | `ghcr.io/yuha0/vigo-home` | Node service: the Apple Home (HomeKit) accessories |
 
-Images are published for `linux/amd64` and `linux/arm64`, tagged `main` and `sha-<commit>` for every commit on `main`, and `v-<version>` for releases.
+Images are published for `linux/amd64` and `linux/arm64`, tagged `main` and `sha-<commit>` for every commit on `main`, and `v<version>` (e.g. `v1.0.0`) for releases.
 
 ## Requirements
 
