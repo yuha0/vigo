@@ -41,6 +41,8 @@ export type MockTvOptions = {
   /** Keys whose setter the mock acknowledges without applying, as the real TV sometimes does. */
   stubbornKeys: string[];
   settings?: Setting[];
+  /** Fail every WatchEvents stream right after its first message, like the flaky production path. */
+  dropStreamAfterFirst?: boolean;
   /** Start with two uploaded photos besides the TV's own art. */
   uploads?: boolean;
 };
@@ -143,6 +145,7 @@ export class MockTv {
         if (next === "end") return;
         if (next) {
           yield create(WatchEventsResponseSchema, { time: timestampNow(), event: next });
+          if (this.opts.dropStreamAfterFirst) throw new ConnectError("stream reset", Code.Unavailable);
           continue;
         }
         await new Promise<void>((r) => (wake = r));

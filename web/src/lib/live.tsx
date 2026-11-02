@@ -36,7 +36,9 @@ export function applyEvent(qc: QueryClient, msg: WatchEventsResponse) {
     case "artDeleted":
     case "libraryChanged":
       // The library mirrors the TV, so any change to either is a reason to refetch what's shown.
-      void qc.invalidateQueries({ queryKey: qk.library });
+      // Never cancel a fetch already in flight: during a sync these events come in bursts, and
+      // cancelling would abort and restart every list call on each one.
+      void qc.invalidateQueries({ queryKey: qk.library }, { cancelRefetch: false });
       break;
     case "settingChanged":
       qc.setQueryData<ListSettingsResponse>(qk.settings, (old) => {
@@ -62,6 +64,14 @@ function anySignal(a: AbortSignal, b: AbortSignal): AbortSignal {
 }
 
 const MIN_BACKOFF_MS = 500;
+/**
+ * A stream counts as healthy, and the backoff starts over, only after it has
+ * stayed open this long. Resetting on the first message turned a stream that
+ * ends right after its first Status into a reconnect every half second.
+ */
+const STABLE_MS = 10_000;
+/** After a reconnect, refetch what deltas may have changed at most this often. */
+const RESYNC_MIN_INTERVAL_MS = 30_000;
 /** visibilitychange and pageshow both fire on one return to the app; they should cause one Refresh. */
 const REFRESH_DEBOUNCE_MS = 500;
 const MAX_BACKOFF_MS = 30_000;
@@ -87,6 +97,16 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     let wake: (() => void) | null = null;
     let attempt = 0;
     let connectedOnce = false;
+    let lastResync = 0;
+    let resyncTimer: ReturnType<typeof setTimeout> | undefined;
+    const resync = () => {
+      clearTimeout(resyncTimer);
+      resyncTimer = undefined;
+      lastResync = Date.now();
+      void qc.invalidateQueries({ queryKey: qk.settings }, { cancelRefetch: false });
+      void qc.invalidateQueries({ queryKey: qk.library }, { cancelRefetch: false });
+      void qc.invalidateQueries({ queryKey: qk.pairing }, { cancelRefetch: false });
+    };
 
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
@@ -112,18 +132,22 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         current = new AbortController();
         const signal = anySignal(stop.signal, current.signal);
         let first = true;
+        let openedAt = 0;
+        let reason: unknown = "ended without error";
         try {
           for await (const msg of client.watchEvents({}, { signal })) {
             if (first) {
               first = false;
-              attempt = 0;
+              openedAt = Date.now();
               setState("live");
               if (connectedOnce) {
-                // Deltas may have been missed while disconnected.
-                void qc.invalidateQueries({ queryKey: qk.settings });
-                void qc.invalidateQueries({ queryKey: qk.library });
-                void qc.invalidateQueries({ queryKey: qk.pairing });
+                // Deltas may have been missed while disconnected (the first message is a full Status).
+                // Refetch at most once per interval; a quick succession of reconnects gets one catch-up.
+                const wait = lastResync + RESYNC_MIN_INTERVAL_MS - Date.now();
+                if (wait <= 0) resync();
+                else resyncTimer ??= setTimeout(resync, wait);
               }
+              if (!connectedOnce) lastResync = Date.now();
               connectedOnce = true;
             }
             applyEvent(qc, msg);
@@ -135,12 +159,18 @@ export function LiveProvider({ children }: { children: ReactNode }) {
             return;
           }
           // Other stream errors are expected (server restarts, network loss); retry below.
+          reason = err;
+        }
+        if (openedAt && Date.now() - openedAt >= STABLE_MS) attempt = 0;
+        if (!stop.signal.aborted && !current.signal.aborted) {
+          // Worth seeing in the console: why live updates dropped, before the retry.
+          console.warn("vigo: live updates disconnected; retrying", reason);
         }
         if (stop.signal.aborted) return;
         setState("reconnecting");
         if (current.signal.aborted) continue;
         const base = Math.min(MAX_BACKOFF_MS, MIN_BACKOFF_MS * 2 ** attempt);
-        attempt++;
+        attempt = Math.min(attempt + 1, 16);
         await sleep(base * (0.75 + Math.random() * 0.5));
       }
     })();
@@ -148,6 +178,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return () => {
       stop.abort();
       wake?.();
+      clearTimeout(resyncTimer);
       document.removeEventListener("visibilitychange", restart);
       window.removeEventListener("online", restart);
     };

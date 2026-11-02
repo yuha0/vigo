@@ -198,6 +198,16 @@ export function GalleryScreen() {
         </Button>
       </div>
 
+      {artworks.isError && artworks.data && (
+        // Keep showing what loaded; a failed background refresh shouldn't empty the gallery.
+        <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/70 px-4 py-2.5 text-sm">
+          <span className="text-muted-foreground">Couldn't refresh the gallery. Showing what was loaded.</span>
+          <Button variant="outline" onClick={() => void artworks.refetch()}>
+            <RefreshCw /> Retry
+          </Button>
+        </div>
+      )}
+
       {tags.length > 0 && (
         <ul className="mb-6 flex flex-wrap gap-2" aria-label="Active filters">
           {tags.map((t) => (
@@ -230,7 +240,7 @@ export function GalleryScreen() {
             </li>
           ))}
         </ul>
-      ) : artworks.isError ? (
+      ) : artworks.isError && !artworks.data ? (
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-3">
             <div>

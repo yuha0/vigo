@@ -1421,6 +1421,8 @@ export const TVService: GenService<{
   /**
    * The first message is always a full Status snapshot. Clients reconnect on
    * stream end and treat the first message after reconnecting as authoritative.
+   * A stream that has been silent for a minute gets the current Status again,
+   * so proxies do not close it as idle.
    *
    * @generated from rpc vigo.core.v1.TVService.WatchEvents
    */

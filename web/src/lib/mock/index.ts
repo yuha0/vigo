@@ -83,6 +83,7 @@ export function createMockBackend(options: MockBackendOptions = {}): MockBackend
     stubbornKeys: options.stubbornKeys ?? ["color_temperature"],
     settings: options.settings,
     uploads: options.uploads,
+    dropStreamAfterFirst: options.dropStreamAfterFirst,
   });
   const home = new MockHome(options.homeMode ?? "online");
   const library = new MockLibrary(tv, {

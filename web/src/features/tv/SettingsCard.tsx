@@ -49,7 +49,7 @@ export function SettingsCard({ state }: { state: TvState }) {
         ))}
       </div>
     );
-  } else if (settings.isError) {
+  } else if (settings.isError && !settings.data) {
     const d = describeError(settings.error);
     body = (
       <div className="flex flex-wrap items-center justify-between gap-3">
