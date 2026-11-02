@@ -45,6 +45,7 @@ export function ArtworkSheet({
   artwork,
   sources,
   selected,
+  guess = false,
   pending,
   busy,
   onOpenChange,
@@ -54,6 +55,7 @@ export function ArtworkSheet({
   artwork: LibraryArtwork | null;
   sources: Source[];
   selected: boolean;
+  guess?: boolean;
   pending: boolean;
   busy: boolean;
   onOpenChange: (open: boolean) => void;
@@ -68,6 +70,7 @@ export function ArtworkSheet({
             artwork={artwork}
             sources={sources}
             selected={selected}
+            guess={guess}
             pending={pending}
             busy={busy}
             onSelect={onSelect}
@@ -84,6 +87,7 @@ function Details({
   artwork: a,
   sources,
   selected,
+  guess,
   pending,
   busy,
   onSelect,
@@ -93,6 +97,7 @@ function Details({
   artwork: LibraryArtwork;
   sources: Source[];
   selected: boolean;
+  guess?: boolean;
   pending: boolean;
   busy: boolean;
   onSelect: (tvContentId: string) => void;
@@ -137,6 +142,13 @@ function Details({
       </div>
 
       <ProvenanceNote artwork={a} sources={sources} />
+
+      {guess && !selected && (
+        <p className="rounded-xl bg-muted/60 px-3.5 py-2.5 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Best guess.</span> The TV reports this artwork as current, but that report can be out of
+          date. Select it on the TV to make sure.
+        </p>
+      )}
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
         <dt className="text-muted-foreground">Sync</dt>

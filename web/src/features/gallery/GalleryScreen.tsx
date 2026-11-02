@@ -20,7 +20,7 @@ import { UploadDialog } from "@/features/gallery/UploadDialog";
 import { useSelectArtwork } from "@/features/gallery/useSelectArtwork";
 import { describeError } from "@/lib/errors";
 import { useStatus } from "@/lib/queries";
-import { confirmedSelection } from "@/lib/tv-state";
+import { tvSelection } from "@/lib/tv-state";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -35,8 +35,10 @@ function useDebounced<T>(value: T, ms: number): T {
 
 export function GalleryScreen() {
   const { data: status } = useStatus();
-  // Only a selection the TV confirmed gets the "Selected" badge.
-  const selectedId = confirmedSelection(status);
+  // Only a selection the TV confirmed gets the "Selected" badge; an unconfirmed report is a best guess.
+  const sel = tvSelection(status);
+  const selectedId = sel?.confirmed ? sel.id : "";
+  const guessId = sel && !sel.confirmed ? sel.id : "";
   const { selectArtwork, pendingId } = useSelectArtwork();
 
   const [tags, setTags] = useState<string[]>([]);
@@ -263,6 +265,7 @@ export function GalleryScreen() {
                     key={a.id}
                     artwork={a}
                     selected={!!a.tvContentId && a.tvContentId === selectedId}
+                    guess={!!a.tvContentId && a.tvContentId === guessId}
                     pending={!!a.tvContentId && a.tvContentId === pendingId}
                     busy={!!pendingId}
                     onSelect={selectArtwork}
@@ -304,6 +307,7 @@ export function GalleryScreen() {
         artwork={opened}
         sources={sources}
         selected={!!opened?.tvContentId && opened.tvContentId === selectedId}
+        guess={!!opened?.tvContentId && opened.tvContentId === guessId}
         pending={!!opened?.tvContentId && opened.tvContentId === pendingId}
         busy={!!pendingId}
         onOpenChange={(o) => !o && setOpenId(null)}

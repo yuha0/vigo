@@ -15,7 +15,7 @@ import {
 import { ArtImage } from "@/components/ArtImage";
 import type { Status } from "@/gen/vigo/core/v1/core_pb";
 import { useArtApi } from "@/lib/backend";
-import { confirmedSelection, tvState, type TvStateKind } from "@/lib/tv-state";
+import { tvSelection, tvState, type TvStateKind } from "@/lib/tv-state";
 import { cn } from "@/lib/utils";
 
 type Placeholder = { icon: LucideIcon; caption: string; screen: string; spin?: boolean };
@@ -43,12 +43,14 @@ const placeholders: Record<Exclude<TvStateKind, "showing-art">, Placeholder> = {
 export function TvPreview({ status, offline = false, className }: { status: Status | null; offline?: boolean; className?: string }) {
   const art = useArtApi();
   const state = tvState(status);
-  const selectedId = confirmedSelection(status);
+  const sel = tvSelection(status);
+  const selectedId = sel?.id ?? "";
+  const guess = !!sel && !sel.confirmed;
   const showArt = state.kind === "showing-art" && !!selectedId;
   const p: Placeholder = offline
     ? { icon: CloudOff, caption: "vigo is unreachable", screen: "bg-neutral-900" }
     : state.kind === "showing-art"
-      ? { icon: CircleHelp, caption: "vigo doesn't know which artwork is on screen yet", screen: "bg-neutral-900" }
+      ? { icon: CircleHelp, caption: "No artwork selected", screen: "bg-neutral-900" }
       : placeholders[state.kind];
 
   return (
@@ -57,10 +59,22 @@ export function TvPreview({ status, offline = false, className }: { status: Stat
         <div className="relative aspect-video overflow-hidden rounded-[2px] bg-neutral-900 shadow-[inset_0_0_0_1px_rgb(0_0_0/0.25)]">
           {showArt ? (
             <>
-              <ArtImage key={selectedId} src={art.tvThumbnailUrl(selectedId)} alt={`Selected artwork ${selectedId}`} eager className="absolute inset-0 bg-neutral-900" />
-              <span className="absolute top-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 text-[0.6875rem] font-medium tracking-[0.12em] text-white uppercase backdrop-blur-md">
-                Selected
-              </span>
+              <ArtImage
+                key={selectedId}
+                src={art.tvThumbnailUrl(selectedId)}
+                alt={`${guess ? "Best guess" : "Selected"} artwork ${selectedId}`}
+                eager
+                className="absolute inset-0 bg-neutral-900"
+              />
+              {guess ? (
+                <span className="absolute top-2.5 left-2.5 rounded-full bg-black/30 px-2.5 py-1 text-[0.6875rem] font-medium text-white/85 ring-1 ring-white/25 backdrop-blur-md">
+                  Best guess
+                </span>
+              ) : (
+                <span className="absolute top-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 text-[0.6875rem] font-medium tracking-[0.12em] text-white uppercase backdrop-blur-md">
+                  Selected
+                </span>
+              )}
             </>
           ) : (
             <div className={cn("absolute inset-0 flex flex-col items-center justify-center gap-2.5 text-white/55", p.screen)}>
@@ -71,15 +85,21 @@ export function TvPreview({ status, offline = false, className }: { status: Stat
         </div>
       </div>
       <figcaption className="mt-3 min-h-5 px-1 text-sm text-muted-foreground">
-        {showArt ? (
+        {showArt && guess ? (
+          <>
+            Best guess · <span className="font-mono text-[0.8125rem]">{selectedId}</span>
+            <span className="mt-1 block">
+              Best-effort guess from the TV. It may not match what's on screen until you choose an artwork in vigo.
+            </span>
+          </>
+        ) : showArt ? (
           <>
             Selected · <span className="font-mono text-[0.8125rem]">{selectedId}</span>
           </>
-        ) : state.kind === "showing-art" && !offline ? (
-          "The TV doesn't reliably report it until you choose one in vigo."
         ) : selectedId && state.canShowArt ? (
           <>
             Show art brings back <span className="font-mono text-[0.8125rem]">{selectedId}</span>
+            {guess && " (best guess)"}
           </>
         ) : null}
       </figcaption>

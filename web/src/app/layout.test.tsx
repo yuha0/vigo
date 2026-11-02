@@ -123,28 +123,39 @@ describe("Integrations navigation", () => {
 });
 
 describe("Unconfirmed selection", () => {
-  it("doesn't present the TV's unconfirmed report as the selection", async () => {
+  it("shows the TV's report as a best guess, never as the selection", async () => {
     renderApp("/", { scenario: "unconfirmed" });
     const card = await screen.findByTestId("tv-card");
     await waitFor(() => expect(card).toHaveAttribute("data-state", "showing-art"));
     const preview = within(card).getByTestId("tv-preview");
-    expect(within(preview).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(preview).getByRole("img", { name: "Best guess artwork SAM-F0206" })).toBeInTheDocument();
+    expect(within(preview).getAllByText(/^Best guess/).length).toBeGreaterThan(0);
     expect(within(preview).queryByText("Selected")).not.toBeInTheDocument();
-    expect(within(preview).queryByText(/SAM-F0206/)).not.toBeInTheDocument();
-    expect(within(preview).getByText("vigo doesn't know which artwork is on screen yet")).toBeInTheDocument();
-    expect(within(card).getByRole("link", { name: "Choose artwork" })).toHaveAttribute("href", "/gallery");
+    expect(preview).toHaveTextContent("Best-effort guess from the TV. It may not match what's on screen until you choose an artwork in vigo.");
+    expect(document.body).not.toHaveTextContent(/doesn't know which artwork/);
+    expect(document.body).not.toHaveTextContent(/doesn't reliably report it/);
+    const choose = within(card).getByRole("link", { name: "Choose artwork" });
+    expect(choose).toHaveAttribute("href", "/gallery");
+    expect(choose).toHaveClass("border");
   });
 
-  it("confirms once a selection is made in the Gallery", async () => {
+  it("shows a muted best-guess badge in the Gallery, then Selected once chosen", async () => {
+    localStorage.clear();
     const { user, backend } = renderApp("/gallery", { scenario: "unconfirmed" });
     await screen.findByRole("list", { name: "Artworks" });
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "SAM-F0206");
-    const reported = await screen.findByRole("button", { name: "SAM-F0206" });
+    const reported = await screen.findByRole("button", { name: "SAM-F0206, best guess" });
     expect(reported).toHaveAttribute("aria-pressed", "false");
-    expect(screen.queryByText("Selected")).not.toBeInTheDocument();
+    expect(within(reported).getByText("Best guess")).not.toHaveClass("bg-brass");
+    expect(within(reported).queryByText("Selected")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Details for SAM-F0206" }));
+    expect(await screen.findByText(/report can be out of date/)).toBeInTheDocument();
+    await user.keyboard("{Escape}");
 
     await user.click(reported);
     expect(await screen.findByRole("button", { name: "SAM-F0206, selected" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("Best guess")).not.toBeInTheDocument();
     expect(backend.tv.status.selectedArt?.confirmed).toBe(true);
 
     await user.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Home" }));

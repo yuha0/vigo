@@ -132,6 +132,7 @@ function useLongPress(fire: () => void, enabled: boolean) {
 export const ArtworkTile = memo(function ArtworkTile({
   artwork: a,
   selected,
+  guess = false,
   pending,
   busy,
   onSelect,
@@ -143,6 +144,8 @@ export const ArtworkTile = memo(function ArtworkTile({
 }: {
   artwork: LibraryArtwork;
   selected: boolean;
+  /** The TV reports this as current but hasn't confirmed it; shown more weakly than "Selected". */
+  guess?: boolean;
   pending: boolean;
   /** Another selection is in flight; taps are ignored until it settles. */
   busy: boolean;
@@ -194,7 +197,7 @@ export const ArtworkTile = memo(function ArtworkTile({
               "aria-pressed": selected,
               "aria-busy": pending || undefined,
               "aria-disabled": !selectable && !pending ? true : undefined,
-              "aria-label": `${name}${selected ? ", selected" : pending ? ", selecting" : deleting ? ", being deleted" : !onTv ? ", not on the TV yet" : ""}`,
+              "aria-label": `${name}${selected ? ", selected" : pending ? ", selecting" : guess ? ", best guess" : deleting ? ", being deleted" : !onTv ? ", not on the TV yet" : ""}`,
               title: !onTv && !deleting ? "Not on the TV yet" : undefined,
               onClick: () => {
                 if (press.consumeClick()) return;
@@ -242,6 +245,11 @@ export const ArtworkTile = memo(function ArtworkTile({
             )}
           >
             <Check className="size-4" strokeWidth={3} />
+          </span>
+        )}
+        {guess && !selected && !selectMode && !pending && (
+          <span className="absolute top-2 left-2 rounded-full bg-black/30 px-2 py-1 text-[0.6875rem] font-medium text-white/85 ring-1 ring-white/25 backdrop-blur-md">
+            Best guess
           </span>
         )}
         {selected && !selectMode && (

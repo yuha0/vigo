@@ -59,7 +59,7 @@ export function HomeScreen() {
                 </Button>
               )}
               {state.kind === "showing-art" && (
-                <Button size="lg" asChild>
+                <Button size="lg" variant={confirmedSelection(status) ? "default" : "outline"} asChild>
                   <Link to="/gallery">Choose artwork</Link>
                 </Button>
               )}
