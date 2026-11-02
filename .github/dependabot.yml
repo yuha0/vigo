@@ -22,6 +22,9 @@ updates:
     ignore:
       # Must match the protoc-gen-es version the generated code comes from; updated with it by hand.
       - dependency-name: "@bufbuild/*"
+      # typescript-eslint does not support TypeScript 7 yet.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       connectrpc:
         patterns: ["@connectrpc/*"]
