@@ -26,6 +26,9 @@ func call[T any](s *Service, ctx context.Context, name string, timeout time.Dura
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
+	if !IsBackground(ctx) {
+		defer s.busy.begin()()
+	}
 	start := time.Now()
 	v, err := fn(ctx)
 	d := time.Since(start)

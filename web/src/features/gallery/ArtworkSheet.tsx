@@ -1,4 +1,4 @@
-import { Crop, Folder, LoaderCircle, Plus, Smartphone, Sparkles, Store, Trash2, X } from "lucide-react";
+import { Crop, Folder, ImageDown, LoaderCircle, Plus, Smartphone, Sparkles, Store, Trash2, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +19,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { SyncState, TagOrigin, type LibraryArtwork, type Source } from "@/gen/vigo/core/v1/library_pb";
 import { SyncBadge } from "@/features/gallery/ArtworkTile";
-import { useDeleteArtwork, useUpdateTags } from "@/features/gallery/library-queries";
+import { batchToast } from "@/features/gallery/batch";
+import { useDeleteArtwork, useRefreshThumbnails, useUpdateTags } from "@/features/gallery/library-queries";
 import { artworkName, canCrop, isArtStore, isDeleting, issueText, provenance, tagLabel } from "@/features/gallery/tags";
 import { useArtApi } from "@/lib/backend";
 import { cn } from "@/lib/utils";
@@ -125,7 +126,7 @@ function Details({
 
       <div className="relative">
         <ArtImage
-          src={art.thumbnailUrl(a.id)}
+          src={art.thumbnailUrl(a.id, provenance(a) !== "managed" && a.updatedAt ? String(a.updatedAt.seconds) : undefined)}
           alt={name}
           className="aspect-video w-full rounded-xl bg-neutral-900"
           imgClassName={Math.abs(ratio / (16 / 9) - 1) > 0.01 ? "object-contain" : undefined}
@@ -175,6 +176,8 @@ function Details({
         </ul>
       )}
 
+      {provenance(a) !== "managed" && !deleting && <RefreshThumbnailButton artwork={a} />}
+
       <TagEditor artwork={a} sources={sources} disabled={deleting} />
 
       <div className="flex flex-col-reverse gap-2 border-t border-border/70 pt-5 sm:flex-row sm:justify-between">
@@ -185,6 +188,27 @@ function Details({
         </Button>
       </div>
     </>
+  );
+}
+
+function RefreshThumbnailButton({ artwork: a }: { artwork: LibraryArtwork }) {
+  const refresh = useRefreshThumbnails();
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/60 px-3.5 py-2.5 text-sm">
+      <p className="min-w-0 flex-1 basis-48 text-muted-foreground">
+        vigo keeps the TV's thumbnail and doesn't download it again unless you ask.
+      </p>
+      <Button
+        variant="outline"
+        className="bg-card"
+        disabled={refresh.isPending}
+        title="vigo keeps the TV's thumbnail and doesn't download it again unless you ask."
+        onClick={() => refresh.mutate([a.id], { onSuccess: (results) => batchToast("Refreshed", "thumbnail", results, () => artworkName(a)) })}
+      >
+        {refresh.isPending ? <LoaderCircle className="animate-spin" /> : <ImageDown />}
+        Refresh thumbnail
+      </Button>
+    </div>
   );
 }
 

@@ -21,9 +21,6 @@ import (
 const (
 	thumbnailTimeout  = 30 * time.Second
 	thumbnailAttempts = 5
-	// thumbnailMissTTL is how long an id the TV served no thumbnail for is
-	// answered from memory; each such attempt costs the TV seconds.
-	thumbnailMissTTL = 10 * time.Minute
 	// freshUpload is how long after an upload a thumbnail refusal is
 	// treated as the TV still processing the image.
 	freshUpload = 30 * time.Second
@@ -133,16 +130,20 @@ func (s *Service) findArtwork(ctx context.Context, conn samsung.ArtConn, id stri
 	return nil, errs.New(ErrNotFound, "no artwork %s", id)
 }
 
-// Thumbnail returns a JPEG thumbnail and its ETag.
+// Thumbnail fetches a JPEG thumbnail from the TV and returns it with its
+// ETag. A ctx marked Background waits for interactive calls to finish
+// first. The TV has no thumbnail for some Art Store items (docs/tv-api.md
+// §5 "D2D socket transfers"); that is ErrNotFound.
 func (s *Service) Thumbnail(ctx context.Context, contentID string) (data []byte, etag string, err error) {
 	if contentID == "" {
 		return nil, "", errs.New(ErrInvalidArgument, "content_id is required")
 	}
-	if t, ok := s.thumbs.get(contentID); ok {
-		return t.data, t.etag, nil
-	}
-	if s.thumbs.missed(contentID) {
-		return nil, "", noThumbnail(contentID)
+	if IsBackground(ctx) {
+		if err := s.busy.waitIdle(ctx); err != nil {
+			return nil, "", err
+		}
+	} else {
+		defer s.busy.begin()()
 	}
 	conn, err := s.artConn()
 	if err != nil {
@@ -153,18 +154,14 @@ func (s *Service) Thumbnail(ctx context.Context, contentID string) (data []byte,
 		fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), thumbnailTimeout)
 		defer cancel()
 		select {
-		case s.thumbs.sem <- struct{}{}:
+		case s.thumbs.slot <- struct{}{}:
 		case <-fctx.Done():
 			return nil, fctx.Err()
 		}
-		defer func() { <-s.thumbs.sem }()
-		if t, ok := s.thumbs.get(contentID); ok {
-			return t, nil
-		}
+		defer func() { <-s.thumbs.slot }()
 		start := time.Now()
 		data, err := s.fetchThumbnail(fctx, conn, contentID)
 		if errors.Is(err, samsung.ErrNoData) {
-			s.thumbs.miss(contentID, thumbnailMissTTL)
 			return nil, noThumbnail(contentID)
 		}
 		if err != nil {
@@ -172,7 +169,7 @@ func (s *Service) Thumbnail(ctx context.Context, contentID string) (data []byte,
 		}
 		s.m.D2DBytes.WithLabelValues(metrics.DirectionDownload).Add(float64(len(data)))
 		s.m.D2DDuration.WithLabelValues(metrics.DirectionDownload).Observe(time.Since(start).Seconds())
-		return s.thumbs.put(contentID, data), nil
+		return data, nil
 	})
 	select {
 	case <-ctx.Done():
@@ -181,8 +178,8 @@ func (s *Service) Thumbnail(ctx context.Context, contentID string) (data []byte,
 		if r.Err != nil {
 			return nil, "", r.Err
 		}
-		t := r.Val.(thumbnail)
-		return t.data, t.etag, nil
+		data := r.Val.([]byte)
+		return data, etagOf(data), nil
 	}
 }
 
@@ -317,7 +314,6 @@ func (s *Service) DeleteArt(ctx context.Context, ids []string) ([]string, error)
 }
 
 func (s *Service) forgetArtwork(ctx context.Context, id string) {
-	s.thumbs.remove(id)
 	s.selectionDeleted(ctx, id)
 	if h := s.libraryHook(); h != nil {
 		h.TVContentDeleted(id)

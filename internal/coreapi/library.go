@@ -141,13 +141,63 @@ func imageHandler(lib *library.Library, render func(*library.Library, context.Co
 			writeErr(w, err)
 			return
 		}
-		if strings.HasPrefix(id, "sha256:") {
-			w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
-		} else {
-			w.Header().Set("Cache-Control", "private, no-cache")
-		}
+		setThumbCaching(w, id)
 		serveJPEG(w, r, data, etag)
 	}
+}
+
+// setThumbCaching: source renditions are content-addressed and never change
+// under the same URL; TV thumbnails can be refreshed, so they revalidate.
+func setThumbCaching(w http.ResponseWriter, id string) {
+	if strings.HasPrefix(id, "sha256:") {
+		w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
+	} else {
+		w.Header().Set("Cache-Control", "private, no-cache")
+	}
+}
+
+// storedThumbnails answers thumbnail requests from the database on any
+// replica, and passes the rest (nothing stored yet) on, to the leader.
+func storedThumbnails(lib *library.Library, next http.Handler) http.Handler {
+	if lib == nil {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, ok := thumbnailID(lib, r)
+		if !ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+		data, etag, status, err := lib.StoredThumbnail(r.Context(), id)
+		switch {
+		case err == nil && status == "ok":
+			setThumbCaching(w, id)
+			serveJPEG(w, r, data, etag)
+		case err == nil && status == "missing":
+			writeError(w, connect.CodeNotFound, "the TV has no thumbnail for this artwork")
+		default:
+			next.ServeHTTP(w, r)
+		}
+	})
+}
+
+// thumbnailID maps a thumbnail request to an artwork id.
+func thumbnailID(lib *library.Library, r *http.Request) (string, bool) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return "", false
+	}
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) != 3 || parts[2] != "thumbnail" {
+		return "", false
+	}
+	switch parts[0] {
+	case "library":
+		return parts[1], true
+	case "art":
+		id, err := lib.ArtworkForContent(r.Context(), parts[1])
+		return id, err == nil
+	}
+	return "", false
 }
 
 // sourceFileHandler stores a browser upload: multipart "file" and an
@@ -227,4 +277,42 @@ func writeUploadReadError(w http.ResponseWriter, err error) {
 		return
 	}
 	writeError(w, connect.CodeInvalidArgument, "the upload could not be read; it may have been interrupted")
+}
+
+func itemResults(ids []string, outcomes []error) []*corev1.ItemResult {
+	out := make([]*corev1.ItemResult, len(ids))
+	for i, id := range ids {
+		r := &corev1.ItemResult{Id: id}
+		if err := outcomes[i]; err != nil {
+			code := codeOf(err)
+			r.ErrorCode = code.String()
+			r.ErrorMessage = userMessage(err, code)
+		}
+		out[i] = r
+	}
+	return out
+}
+
+func (h *libraryHandlers) DeleteArtworks(ctx context.Context, req *connect.Request[corev1.DeleteArtworksRequest]) (*connect.Response[corev1.DeleteArtworksResponse], error) {
+	lib, err := h.get()
+	if err != nil {
+		return nil, err
+	}
+	outcomes, err := lib.DeleteMany(ctx, req.Msg.Ids)
+	if err != nil {
+		return nil, toConnect(err)
+	}
+	return connect.NewResponse(&corev1.DeleteArtworksResponse{Results: itemResults(req.Msg.Ids, outcomes)}), nil
+}
+
+func (h *libraryHandlers) RefreshThumbnails(ctx context.Context, req *connect.Request[corev1.RefreshThumbnailsRequest]) (*connect.Response[corev1.RefreshThumbnailsResponse], error) {
+	lib, err := h.get()
+	if err != nil {
+		return nil, err
+	}
+	outcomes, err := lib.RefreshThumbnails(ctx, req.Msg.Ids)
+	if err != nil {
+		return nil, toConnect(err)
+	}
+	return connect.NewResponse(&corev1.RefreshThumbnailsResponse{Results: itemResults(req.Msg.Ids, outcomes)}), nil
 }

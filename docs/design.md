@@ -66,8 +66,8 @@ Binary payloads don't suit RPC, so these are plain HTTP:
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/art/{content_id}/thumbnail` | `image/jpeg`, cached, `ETag` |
-| `GET` | `/library/{artwork_id}/thumbnail` | `image/jpeg`, from the source file or the TV |
+| `GET` | `/art/{content_id}/thumbnail` | `image/jpeg`, `ETag`: the stored thumbnail of the content's artwork (a vigo upload maps to its source artwork) |
+| `GET` | `/library/{artwork_id}/thumbnail` | `image/jpeg`, `ETag`: stored in PostgreSQL and served by any replica (see Thumbnails) |
 | `GET` | `/library/{artwork_id}/image` | `image/jpeg` crop-editor preview, long side at most 2048 |
 | `POST` | `/sources/{source_id}/files` | `multipart/form-data`: `file`, optional `path` (directory relative to the source root). Writes the file into the source and starts its upload to the TV. Responds `201` with `vigo.core.v1.LibraryArtwork` as protojson. Errors are `{"code": "...", "message": "..."}` using Connect error code names |
 | `GET` | `/healthz` | process is alive |
@@ -119,7 +119,7 @@ These come from verified research and are deliberately reflected in the API shap
 - **No remote power-off.** Long-press `KEY_POWER` over the websocket (3s and 6s holds) was tested and left the TV on. There is no `PowerOff` RPC until a working method is verified.
 - **`select_image` omits `category_id`**, and **uploads use one uuid for `id`, `request_id` and `conn_info.id`**.
 - **Unknown art requests get no reply.** Every art request has a timeout; a timeout is reported as `deadline_exceeded`, never retried blindly.
-- **Some Art Store items have no thumbnail.** The TV opens the D2D socket for them and closes it without data (22 of 106 items on 2026-11-01, consistently per item). That is `404`, remembered for ten minutes, and the UI shows a placeholder.
+- **Some Art Store items have no thumbnail.** The TV opens the D2D socket for them and closes it without data (22 of 106 items on 2026-11-01, consistently per item). That is `404`, recorded as `missing` in the thumbnails table and rechecked weekly, and the UI shows a placeholder.
 - **D2D sockets are dialed 500ms after the TV announces them.** Connecting immediately fails most of the time (verified 2026-11-01; see `internal/samsung/client.go`).
 - **No art host** (Art Mode not entered since boot) is a distinct, surfaced state (`CONNECTION_STATE_NO_ART_HOST`), not a hang.
 - **Model string changes are surfaced loudly** as a `Warning`, since the REST `model` encodes the Tizen generation and firmware changes are the main operational risk.
@@ -139,6 +139,7 @@ These come from verified research and are deliberately reflected in the API shap
 | `selection` | the selection record (see `internal/tv/selection.go`) |
 | `uploads` | own upload tally, content id → bytes |
 | `tv_items` | mirror of the TV library from `get_content_list` |
+| `thumbnails` | one gallery thumbnail per artwork, with status and retry state (see Thumbnails) |
 | `sources`, `source_items` | configured sources; files with path, hash, size, mtime, upright dimensions |
 | `artworks`, `artwork_tags` | the library (see Art library and sources) |
 | `model_history` | REST model strings seen, for the model-change warning |
@@ -207,7 +208,7 @@ A source is a store of image files outside the TV. Flag `--source <url>`, repeat
 | write | accept browser uploads | yes |
 | edit | replace a file in place (crop) | yes, atomic rename |
 
-`--cache-dir/<source-id>/` holds generated thumbnails, crop previews and prepared uploads. Only the leader uses it, and it is emptied at startup. The database is the source of truth; the cache is disposable.
+`--cache-dir/<source-id>/` holds crop-editor previews (long side 2048), generated on demand. Only the leader uses it, and it is emptied at startup. The database is the source of truth; the cache is disposable. Thumbnails are not cached here: they live in the database.
 
 ### Sync
 
@@ -227,11 +228,22 @@ Correctness rules, because sync deletes user files:
 
 - **"Deleted on the TV" needs proof:** an `image_deleted` event, or absence from two consecutive complete content listings. A failed or partial listing never counts.
 - **vigo's own deletions are recorded before they are sent,** so their disappearance from the TV is never read as a deletion on the TV.
-- **Only uploads vigo made are ever deleted from the TV.**
+- **Sync only ever deletes uploads vigo made from the TV.** An explicit user deletion (`DeleteArtwork`, `DeleteArtworks`) of a TV-only upload is the one other way anything leaves the TV.
 - **No deletion threshold.** A user deleting every file is a valid choice, and an arbitrary percentage is not a correctness rule. Correctness comes from the rules above: deletions happen only on proof, never on a failed or partial observation.
 - A source whose root is missing or unreadable is an error, never an empty source.
 
 Sync states: `IN_SYNC`, `PENDING_UPLOAD`, `UPLOADING`, `PENDING_DELETE`, `DELETING` (both shown greyed out until the TV confirms), `ERROR` with the reason, and `TV_ONLY`.
+
+`DeleteArtworks` handles each id as `DeleteArtwork` would and reports every outcome separately; only an empty request or more than 500 ids fail as a whole. Files are removed at once, and TV-only uploads are recorded for deletion rather than sent one by one; the reconciler then deletes the whole batch's TV copies in one pass with one `delete_image_list`, trying items singly only if the TV refuses the batch. One `LibraryChanged` names every affected artwork.
+
+### Thumbnails
+
+Every artwork's gallery thumbnail is stored in PostgreSQL (`thumbnails`, keyed by artwork id, `data` stored uncompressed out of line since JPEGs do not compress), so any replica serves it with an `ETag` and nothing is lost on restart. A request for a thumbnail not stored yet is forwarded to the leader, which renders or downloads it on the spot and stores it.
+
+- **Source artworks** are rendered (480 px box, JPEG quality 80) when the reconciler indexes new content. Content addressing makes them immutable: never rendered again.
+- **TV-only artworks** are downloaded from the TV in the background by the leader, after each mirror pass and when items appear, one D2D transfer at a time and only while no interactive TV call is in flight, so a user's request waits at most for the one transfer already running.
+- **A stored thumbnail is never downloaded again automatically**: TV artwork does not change. `RefreshThumbnails` queues TV-only artworks for a new download ahead of background work and returns at once; a `LibraryChanged` follows when the new thumbnail is stored, and its new `ETag` busts client caches.
+- **Statuses:** `ok`; `missing`, when the TV has no thumbnail for the item (served as `404`, rechecked weekly); `error`, retried with exponential backoff from 1 minute to 6 hours, at most five failures per run. A row is deleted with its artwork.
 
 ### Editing
 
@@ -264,7 +276,7 @@ Required vigo-core metrics:
 | `vigo_tv_d2d_duration_seconds` | histogram | `direction` |
 | `vigo_leader` | gauge | |
 
-Also on vigo-core: `vigo_db_up`, `vigo_integration_leader` (gauge, label `kind`, 1 while a leader stream is held), `vigo_tls_cert_expiry_seconds` (gauge, label `listener`).
+Also on vigo-core: `vigo_db_up`, `vigo_integration_leader` (gauge, label `kind`, 1 while a leader stream is held), `vigo_tls_cert_expiry_seconds` (gauge, label `listener`), `vigo_thumbnails` (gauge, labels `origin` `source`|`tv` and `status` `ok`|`missing`|`error`|`pending`) and `vigo_thumbnail_jobs_total` (counter, labels `origin` and `outcome`).
 
 Required vigo-home metrics: `vigo_home_leader`, `vigo_home_paired` (gauge, label `group`), `vigo_home_core_connected`, `vigo_home_characteristic_writes_total` (labels `accessory`, `outcome`), `vigo_tls_cert_expiry_seconds`.
 

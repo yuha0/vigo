@@ -1,10 +1,11 @@
 import { Check, CircleAlert, Clock, Crop, Ellipsis, Folder, LoaderCircle, Smartphone, Store, Trash2, UploadCloud, ZoomIn } from "lucide-react";
-import { memo, type ReactNode } from "react";
+import { memo, useRef, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 
 import { ArtImage } from "@/components/ArtImage";
 import { SyncState, type LibraryArtwork } from "@/gen/vigo/core/v1/library_pb";
 import { ASPECT, artworkName, hasTag, isDeleting, issueText, LOW_RES, provenance } from "@/features/gallery/tags";
 import { useArtApi } from "@/lib/backend";
+import { haptic } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 
 function Pill({ tone = "dark", children, title }: { tone?: "dark" | "error"; children: ReactNode; title?: string }) {
@@ -86,6 +87,48 @@ function caption(a: LibraryArtwork): string {
   return path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "Top folder";
 }
 
+const LONG_PRESS_MS = 500;
+
+/** A long press with a finger; the click that follows it is swallowed. */
+function useLongPress(fire: () => void, enabled: boolean) {
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const start = useRef<[number, number] | null>(null);
+  const fired = useRef(false);
+  const cancel = () => {
+    clearTimeout(timer.current);
+    start.current = null;
+  };
+  return {
+    consumeClick: () => {
+      const f = fired.current;
+      fired.current = false;
+      return f;
+    },
+    handlers: enabled
+      ? {
+          onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
+            if (e.pointerType !== "touch") return;
+            start.current = [e.clientX, e.clientY];
+            timer.current = setTimeout(() => {
+              fired.current = true;
+              haptic(10);
+              fire();
+            }, LONG_PRESS_MS);
+          },
+          onPointerMove: (e: PointerEvent<HTMLButtonElement>) => {
+            const s = start.current;
+            if (s && Math.hypot(e.clientX - s[0], e.clientY - s[1]) > 10) cancel();
+          },
+          onPointerUp: cancel,
+          onPointerCancel: cancel,
+          onContextMenu: (e: MouseEvent) => {
+            if (fired.current) e.preventDefault();
+          },
+        }
+      : {},
+  };
+}
+
 export const ArtworkTile = memo(function ArtworkTile({
   artwork: a,
   selected,
@@ -93,6 +136,10 @@ export const ArtworkTile = memo(function ArtworkTile({
   busy,
   onSelect,
   onOpen,
+  selectMode = false,
+  checked = false,
+  onToggle,
+  onLongPress,
 }: {
   artwork: LibraryArtwork;
   selected: boolean;
@@ -101,6 +148,12 @@ export const ArtworkTile = memo(function ArtworkTile({
   busy: boolean;
   onSelect: (tvContentId: string) => void;
   onOpen: (id: string) => void;
+  /** Multi-select: taps toggle the tile instead of selecting it on the TV. */
+  selectMode?: boolean;
+  checked?: boolean;
+  onToggle?: (id: string, range: boolean) => void;
+  /** A long press on touch enters select mode with this tile. */
+  onLongPress?: (id: string) => void;
 }) {
   const art = useArtApi();
   const name = artworkName(a);
@@ -111,6 +164,9 @@ export const ArtworkTile = memo(function ArtworkTile({
   const issues = [LOW_RES, ASPECT].filter((t) => hasTag(a, t));
   const selectable = onTv && !deleting && !busy;
   const managed = provenance(a) === "managed";
+  const press = useLongPress(() => onLongPress?.(a.id), !selectMode && !deleting && !!onLongPress);
+  // TV-only thumbnails can be re-downloaded; tying the URL to updated_at makes the new one load.
+  const version = !managed && a.updatedAt ? String(a.updatedAt.seconds) : undefined;
 
   return (
     <li
@@ -123,12 +179,29 @@ export const ArtworkTile = memo(function ArtworkTile({
       <button
         type="button"
         disabled={deleting}
-        aria-pressed={selected}
-        aria-busy={pending || undefined}
-        aria-disabled={!selectable && !pending ? true : undefined}
-        aria-label={`${name}${selected ? ", selected" : pending ? ", selecting" : deleting ? ", being deleted" : !onTv ? ", not on the TV yet" : ""}`}
-        title={!onTv && !deleting ? "Not on the TV yet" : undefined}
-        onClick={() => selectable && onSelect(a.tvContentId)}
+        {...(selectMode
+          ? {
+              role: "checkbox",
+              "aria-checked": checked,
+              "aria-label": name,
+              onClick: (e) => {
+                // The click that ends the long press which opened select mode already selected this tile.
+                if (press.consumeClick()) return;
+                onToggle?.(a.id, e.shiftKey);
+              },
+            }
+          : {
+              "aria-pressed": selected,
+              "aria-busy": pending || undefined,
+              "aria-disabled": !selectable && !pending ? true : undefined,
+              "aria-label": `${name}${selected ? ", selected" : pending ? ", selecting" : deleting ? ", being deleted" : !onTv ? ", not on the TV yet" : ""}`,
+              title: !onTv && !deleting ? "Not on the TV yet" : undefined,
+              onClick: () => {
+                if (press.consumeClick()) return;
+                if (selectable) onSelect(a.tvContentId);
+              },
+            })}
+        {...press.handlers}
         className={cn(
           "relative block w-full overflow-hidden text-left outline-none transition-[box-shadow,transform] duration-300 ease-[var(--ease-gallery)] focus-visible:ring-[3px] focus-visible:ring-ring",
           // Art from the user's own folders sits in a mat, like the frame on the TV; TV-only art doesn't.
@@ -136,12 +209,14 @@ export const ArtworkTile = memo(function ArtworkTile({
             ? "rounded-[0.625rem] bg-[#e9e4da] p-[5px] shadow-[0_1px_2px_rgb(0_0_0/0.08),0_8px_20px_-12px_rgb(0_0_0/0.35)] dark:bg-[#3a3631]"
             : "rounded-xl",
           selectable && "active:scale-[0.98]",
-          (!onTv || busy) && !pending && "cursor-default",
-          selected ? "ring-2 ring-brass ring-offset-2 ring-offset-background" : "ring-1 ring-black/5 hover:shadow-lg dark:ring-white/5",
+          !selectMode && (!onTv || busy) && !pending && "cursor-default",
+          (selectMode ? checked : selected)
+            ? "ring-2 ring-brass ring-offset-2 ring-offset-background"
+            : "ring-1 ring-black/5 hover:shadow-lg dark:ring-white/5",
         )}
       >
         <ArtImage
-          src={art.thumbnailUrl(a.id)}
+          src={art.thumbnailUrl(a.id, version)}
           alt=""
           className={cn("aspect-video w-full", managed && "rounded-[3px]", contain && "bg-neutral-900")}
           imgClassName={cn(
@@ -158,7 +233,18 @@ export const ArtworkTile = memo(function ArtworkTile({
         <span className="absolute top-2 right-2">
           <ProvenanceBadge artwork={a} />
         </span>
-        {selected && (
+        {selectMode && (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute top-2 left-2 flex size-7 items-center justify-center rounded-full shadow-sm ring-2 transition-colors",
+              checked ? "bg-brass text-white ring-white" : "bg-white/85 text-transparent ring-black/20 backdrop-blur-md",
+            )}
+          >
+            <Check className="size-4" strokeWidth={3} />
+          </span>
+        )}
+        {selected && !selectMode && (
           <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[0.6875rem] font-medium tracking-wide text-white backdrop-blur-md">
             <Check className="size-3" /> Selected
           </span>
@@ -202,15 +288,17 @@ export const ArtworkTile = memo(function ArtworkTile({
             )}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onOpen(a.id)}
-          disabled={deleting}
-          aria-label={`Details for ${name}`}
-          className="-mt-1.5 -mr-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <Ellipsis className="size-[1.125rem]" />
-        </button>
+        {!selectMode && (
+          <button
+            type="button"
+            onClick={() => onOpen(a.id)}
+            disabled={deleting}
+            aria-label={`Details for ${name}`}
+            className="-mt-1.5 -mr-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Ellipsis className="size-[1.125rem]" />
+          </button>
+        )}
       </div>
     </li>
   );

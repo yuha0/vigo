@@ -15,8 +15,11 @@ export type UploadOptions = {
 export interface ArtApi {
   /** Thumbnail of a TV content id, e.g. the TV's current selection. */
   tvThumbnailUrl(contentId: string): string;
-  /** Thumbnail of a library artwork. */
-  thumbnailUrl(artworkId: string): string;
+  /**
+   * Thumbnail of a library artwork. `version` (e.g. from updated_at) changes the
+   * URL after a refresh, so neither the browser nor the service worker serves the old image.
+   */
+  thumbnailUrl(artworkId: string, version?: string): string;
   /** Upright preview of a library artwork for the crop editor (long side at most 2048). */
   imageUrl(artworkId: string): string;
   /** Writes a file into a source; vigo-core then uploads it to the TV. */
@@ -55,7 +58,7 @@ const enc = encodeURIComponent;
 export function createHttpArtApi(baseUrl = ""): ArtApi {
   return {
     tvThumbnailUrl: (id) => `${baseUrl}/art/${enc(id)}/thumbnail`,
-    thumbnailUrl: (id) => `${baseUrl}/library/${enc(id)}/thumbnail`,
+    thumbnailUrl: (id, version) => `${baseUrl}/library/${enc(id)}/thumbnail${version ? `?v=${enc(version)}` : ""}`,
     imageUrl: (id) => `${baseUrl}/library/${enc(id)}/image`,
     upload(sourceId, file, { path, onProgress, signal } = {}) {
       return new Promise<LibraryArtwork>((resolve, reject) => {

@@ -84,6 +84,8 @@ type Library struct {
 	tvMu sync.Mutex
 
 	mirrorKick chan struct{}
+	thumbKick  chan struct{}
+	deleteKick chan struct{}
 	events     chan tvEvent
 	media      singleflight.Group
 }
@@ -123,6 +125,8 @@ func New(o Options) (*Library, error) {
 		kicks:      map[string]chan struct{}{},
 		srcMu:      map[string]*sync.Mutex{},
 		mirrorKick: make(chan struct{}, 1),
+		thumbKick:  make(chan struct{}, 1),
+		deleteKick: make(chan struct{}, 1),
 		events:     make(chan tvEvent, 256),
 	}
 	for _, s := range o.Sources.All() {
@@ -163,6 +167,7 @@ func (l *Library) Run(ctx context.Context) error {
 	}()
 	var wg sync.WaitGroup
 	wg.Go(func() { l.mirrorLoop(ctx) })
+	wg.Go(func() { l.thumbLoop(ctx) })
 	for _, s := range l.o.Sources.All() {
 		wg.Go(func() { l.sourceLoop(ctx, s) })
 	}
@@ -186,6 +191,10 @@ func (l *Library) prepare(ctx context.Context) error {
 		WHERE sync_state IN ('UPLOADING', 'DELETING')`); err != nil {
 		return err
 	}
+	// Mirror the TV once before serving, so a fresh database does not
+	// briefly show no TV artworks. An unavailable TV fails fast and is left
+	// to the mirror loop.
+	l.refreshMirror(ctx)
 	l.mu.Lock()
 	l.running = true
 	l.mu.Unlock()
@@ -241,6 +250,10 @@ func (l *Library) mirrorLoop(ctx context.Context) {
 			l.refreshMirror(ctx)
 		case <-l.mirrorKick:
 			l.refreshMirror(ctx)
+		case <-l.deleteKick:
+			l.tvMu.Lock()
+			l.deletions(ctx)
+			l.tvMu.Unlock()
 		case ev := <-l.events:
 			if ev.deleted {
 				l.contentDeleted(ctx, ev.contentID, "event")

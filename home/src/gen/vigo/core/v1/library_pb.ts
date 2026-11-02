@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file vigo/core/v1/library.proto.
  */
 export const file_vigo_core_v1_library: GenFile = /*@__PURE__*/
-  fileDesc("Chp2aWdvL2NvcmUvdjEvbGlicmFyeS5wcm90bxIMdmlnby5jb3JlLnYxIjwKA1RhZxIMCgRuYW1lGAEgASgJEicKBm9yaWdpbhgCIAEoDjIXLnZpZ28uY29yZS52MS5UYWdPcmlnaW4iLAoJU291cmNlUmVmEhEKCXNvdXJjZV9pZBgBIAEoCRIMCgRwYXRoGAIgASgJItMCCg5MaWJyYXJ5QXJ0d29yaxIKCgJpZBgBIAEoCRIVCg10dl9jb250ZW50X2lkGAIgASgJEi8KDGNvbnRlbnRfdHlwZRgDIAEoDjIZLnZpZ28uY29yZS52MS5Db250ZW50VHlwZRINCgV3aWR0aBgEIAEoBRIOCgZoZWlnaHQYBSABKAUSEgoKc2l6ZV9ieXRlcxgGIAEoAxIoCgdzb3VyY2VzGAcgAygLMhcudmlnby5jb3JlLnYxLlNvdXJjZVJlZhIfCgR0YWdzGAggAygLMhEudmlnby5jb3JlLnYxLlRhZxIrCgpzeW5jX3N0YXRlGAkgASgOMhcudmlnby5jb3JlLnYxLlN5bmNTdGF0ZRISCgpzeW5jX2Vycm9yGAogASgJEi4KCnVwZGF0ZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInMKE0xpc3RBcnR3b3Jrc1JlcXVlc3QSDAoEdGFncxgBIAMoCRINCgVxdWVyeRgCIAEoCRIYChBpbmNsdWRlX2RlbGV0aW5nGAMgASgIEhEKCXBhZ2Vfc2l6ZRgEIAEoBRISCgpwYWdlX3Rva2VuGAUgASgJIm4KFExpc3RBcnR3b3Jrc1Jlc3BvbnNlEi4KCGFydHdvcmtzGAEgAygLMhwudmlnby5jb3JlLnYxLkxpYnJhcnlBcnR3b3JrEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRINCgV0b3RhbBgDIAEoBSIfChFHZXRBcnR3b3JrUmVxdWVzdBIKCgJpZBgBIAEoCSJDChJHZXRBcnR3b3JrUmVzcG9uc2USLQoHYXJ0d29yaxgBIAEoCzIcLnZpZ28uY29yZS52MS5MaWJyYXJ5QXJ0d29yayI5CghUYWdDb3VudBIeCgN0YWcYASABKAsyES52aWdvLmNvcmUudjEuVGFnEg0KBWNvdW50GAIgASgFIiEKD0xpc3RUYWdzUmVxdWVzdBIOCgZwcmVmaXgYASABKAkiOAoQTGlzdFRhZ3NSZXNwb25zZRIkCgR0YWdzGAEgAygLMhYudmlnby5jb3JlLnYxLlRhZ0NvdW50IkQKEVVwZGF0ZVRhZ3NSZXF1ZXN0EhIKCmFydHdvcmtfaWQYASABKAkSCwoDYWRkGAIgAygJEg4KBnJlbW92ZRgDIAMoCSJDChJVcGRhdGVUYWdzUmVzcG9uc2USLQoHYXJ0d29yaxgBIAEoCzIcLnZpZ28uY29yZS52MS5MaWJyYXJ5QXJ0d29yayIiChREZWxldGVBcnR3b3JrUmVxdWVzdBIKCgJpZBgBIAEoCSJGChVEZWxldGVBcnR3b3JrUmVzcG9uc2USLQoHYXJ0d29yaxgBIAEoCzIcLnZpZ28uY29yZS52MS5MaWJyYXJ5QXJ0d29yayI7CgRSZWN0EgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUiQgoSQ3JvcEFydHdvcmtSZXF1ZXN0EgoKAmlkGAEgASgJEiAKBHJlY3QYAiABKAsyEi52aWdvLmNvcmUudjEuUmVjdCJEChNDcm9wQXJ0d29ya1Jlc3BvbnNlEi0KB2FydHdvcmsYASABKAsyHC52aWdvLmNvcmUudjEuTGlicmFyeUFydHdvcmsi3AEKBlNvdXJjZRIKCgJpZBgBIAEoCRIMCgRraW5kGAIgASgJEg8KB2Rpc3BsYXkYAyABKAkSEAoId3JpdGFibGUYBCABKAgSEAoIZWRpdGFibGUYBSABKAgSFQoNYXJ0d29ya19jb3VudBgGIAEoBRIPCgdzeW5jaW5nGAcgASgIEjIKDmxhc3Rfc3luY2VkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpsYXN0X2Vycm9yGAkgASgJSgQIChALUg1oYWx0ZWRfcmVhc29uIhQKEkxpc3RTb3VyY2VzUmVxdWVzdCI8ChNMaXN0U291cmNlc1Jlc3BvbnNlEiUKB3NvdXJjZXMYASADKAsyFC52aWdvLmNvcmUudjEuU291cmNlIiYKEVN5bmNTb3VyY2VSZXF1ZXN0EhEKCXNvdXJjZV9pZBgBIAEoCSIUChJTeW5jU291cmNlUmVzcG9uc2Uq3gEKCVN5bmNTdGF0ZRIaChZTWU5DX1NUQVRFX1VOU1BFQ0lGSUVEEAASFgoSU1lOQ19TVEFURV9JTl9TWU5DEAESHQoZU1lOQ19TVEFURV9QRU5ESU5HX1VQTE9BRBACEhgKFFNZTkNfU1RBVEVfVVBMT0FESU5HEAMSHQoZU1lOQ19TVEFURV9QRU5ESU5HX0RFTEVURRAEEhcKE1NZTkNfU1RBVEVfREVMRVRJTkcQBRIUChBTWU5DX1NUQVRFX0VSUk9SEAYSFgoSU1lOQ19TVEFURV9UVl9PTkxZEAcqUwoJVGFnT3JpZ2luEhoKFlRBR19PUklHSU5fVU5TUEVDSUZJRUQQABIVChFUQUdfT1JJR0lOX1NZU1RFTRABEhMKD1RBR19PUklHSU5fVVNFUhACMqcFCg5MaWJyYXJ5U2VydmljZRJVCgxMaXN0QXJ0d29ya3MSIS52aWdvLmNvcmUudjEuTGlzdEFydHdvcmtzUmVxdWVzdBoiLnZpZ28uY29yZS52MS5MaXN0QXJ0d29ya3NSZXNwb25zZRJPCgpHZXRBcnR3b3JrEh8udmlnby5jb3JlLnYxLkdldEFydHdvcmtSZXF1ZXN0GiAudmlnby5jb3JlLnYxLkdldEFydHdvcmtSZXNwb25zZRJJCghMaXN0VGFncxIdLnZpZ28uY29yZS52MS5MaXN0VGFnc1JlcXVlc3QaHi52aWdvLmNvcmUudjEuTGlzdFRhZ3NSZXNwb25zZRJPCgpVcGRhdGVUYWdzEh8udmlnby5jb3JlLnYxLlVwZGF0ZVRhZ3NSZXF1ZXN0GiAudmlnby5jb3JlLnYxLlVwZGF0ZVRhZ3NSZXNwb25zZRJYCg1EZWxldGVBcnR3b3JrEiIudmlnby5jb3JlLnYxLkRlbGV0ZUFydHdvcmtSZXF1ZXN0GiMudmlnby5jb3JlLnYxLkRlbGV0ZUFydHdvcmtSZXNwb25zZRJSCgtDcm9wQXJ0d29yaxIgLnZpZ28uY29yZS52MS5Dcm9wQXJ0d29ya1JlcXVlc3QaIS52aWdvLmNvcmUudjEuQ3JvcEFydHdvcmtSZXNwb25zZRJSCgtMaXN0U291cmNlcxIgLnZpZ28uY29yZS52MS5MaXN0U291cmNlc1JlcXVlc3QaIS52aWdvLmNvcmUudjEuTGlzdFNvdXJjZXNSZXNwb25zZRJPCgpTeW5jU291cmNlEh8udmlnby5jb3JlLnYxLlN5bmNTb3VyY2VSZXF1ZXN0GiAudmlnby5jb3JlLnYxLlN5bmNTb3VyY2VSZXNwb25zZUIyWjBnaXRodWIuY29tL3l1aGEwL3ZpZ28vZ2VuL2dvL3ZpZ28vY29yZS92MTtjb3JldjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_vigo_core_v1_core]);
+  fileDesc("Chp2aWdvL2NvcmUvdjEvbGlicmFyeS5wcm90bxIMdmlnby5jb3JlLnYxIjwKA1RhZxIMCgRuYW1lGAEgASgJEicKBm9yaWdpbhgCIAEoDjIXLnZpZ28uY29yZS52MS5UYWdPcmlnaW4iLAoJU291cmNlUmVmEhEKCXNvdXJjZV9pZBgBIAEoCRIMCgRwYXRoGAIgASgJItMCCg5MaWJyYXJ5QXJ0d29yaxIKCgJpZBgBIAEoCRIVCg10dl9jb250ZW50X2lkGAIgASgJEi8KDGNvbnRlbnRfdHlwZRgDIAEoDjIZLnZpZ28uY29yZS52MS5Db250ZW50VHlwZRINCgV3aWR0aBgEIAEoBRIOCgZoZWlnaHQYBSABKAUSEgoKc2l6ZV9ieXRlcxgGIAEoAxIoCgdzb3VyY2VzGAcgAygLMhcudmlnby5jb3JlLnYxLlNvdXJjZVJlZhIfCgR0YWdzGAggAygLMhEudmlnby5jb3JlLnYxLlRhZxIrCgpzeW5jX3N0YXRlGAkgASgOMhcudmlnby5jb3JlLnYxLlN5bmNTdGF0ZRISCgpzeW5jX2Vycm9yGAogASgJEi4KCnVwZGF0ZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIqABChNMaXN0QXJ0d29ya3NSZXF1ZXN0EgwKBHRhZ3MYASADKAkSDQoFcXVlcnkYAiABKAkSGAoQaW5jbHVkZV9kZWxldGluZxgDIAEoCBIRCglwYWdlX3NpemUYBCABKAUSEgoKcGFnZV90b2tlbhgFIAEoCRIrCgZvcmlnaW4YBiABKA4yGy52aWdvLmNvcmUudjEuQXJ0d29ya09yaWdpbiJuChRMaXN0QXJ0d29ya3NSZXNwb25zZRIuCghhcnR3b3JrcxgBIAMoCzIcLnZpZ28uY29yZS52MS5MaWJyYXJ5QXJ0d29yaxIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkSDQoFdG90YWwYAyABKAUiHwoRR2V0QXJ0d29ya1JlcXVlc3QSCgoCaWQYASABKAkiQwoSR2V0QXJ0d29ya1Jlc3BvbnNlEi0KB2FydHdvcmsYASABKAsyHC52aWdvLmNvcmUudjEuTGlicmFyeUFydHdvcmsiOQoIVGFnQ291bnQSHgoDdGFnGAEgASgLMhEudmlnby5jb3JlLnYxLlRhZxINCgVjb3VudBgCIAEoBSIhCg9MaXN0VGFnc1JlcXVlc3QSDgoGcHJlZml4GAEgASgJIjgKEExpc3RUYWdzUmVzcG9uc2USJAoEdGFncxgBIAMoCzIWLnZpZ28uY29yZS52MS5UYWdDb3VudCJEChFVcGRhdGVUYWdzUmVxdWVzdBISCgphcnR3b3JrX2lkGAEgASgJEgsKA2FkZBgCIAMoCRIOCgZyZW1vdmUYAyADKAkiQwoSVXBkYXRlVGFnc1Jlc3BvbnNlEi0KB2FydHdvcmsYASABKAsyHC52aWdvLmNvcmUudjEuTGlicmFyeUFydHdvcmsiIgoURGVsZXRlQXJ0d29ya1JlcXVlc3QSCgoCaWQYASABKAkiRgoVRGVsZXRlQXJ0d29ya1Jlc3BvbnNlEi0KB2FydHdvcmsYASABKAsyHC52aWdvLmNvcmUudjEuTGlicmFyeUFydHdvcmsiOwoEUmVjdBIJCgF4GAEgASgFEgkKAXkYAiABKAUSDQoFd2lkdGgYAyABKAUSDgoGaGVpZ2h0GAQgASgFIkIKEkNyb3BBcnR3b3JrUmVxdWVzdBIKCgJpZBgBIAEoCRIgCgRyZWN0GAIgASgLMhIudmlnby5jb3JlLnYxLlJlY3QiRAoTQ3JvcEFydHdvcmtSZXNwb25zZRItCgdhcnR3b3JrGAEgASgLMhwudmlnby5jb3JlLnYxLkxpYnJhcnlBcnR3b3JrItwBCgZTb3VyY2USCgoCaWQYASABKAkSDAoEa2luZBgCIAEoCRIPCgdkaXNwbGF5GAMgASgJEhAKCHdyaXRhYmxlGAQgASgIEhAKCGVkaXRhYmxlGAUgASgIEhUKDWFydHdvcmtfY291bnQYBiABKAUSDwoHc3luY2luZxgHIAEoCBIyCg5sYXN0X3N5bmNlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEgoKbGFzdF9lcnJvchgJIAEoCUoECAoQC1INaGFsdGVkX3JlYXNvbiIUChJMaXN0U291cmNlc1JlcXVlc3QiPAoTTGlzdFNvdXJjZXNSZXNwb25zZRIlCgdzb3VyY2VzGAEgAygLMhQudmlnby5jb3JlLnYxLlNvdXJjZSImChFTeW5jU291cmNlUmVxdWVzdBIRCglzb3VyY2VfaWQYASABKAkiFAoSU3luY1NvdXJjZVJlc3BvbnNlIkMKCkl0ZW1SZXN1bHQSCgoCaWQYASABKAkSEgoKZXJyb3JfY29kZRgCIAEoCRIVCg1lcnJvcl9tZXNzYWdlGAMgASgJIiQKFURlbGV0ZUFydHdvcmtzUmVxdWVzdBILCgNpZHMYASADKAkiQwoWRGVsZXRlQXJ0d29ya3NSZXNwb25zZRIpCgdyZXN1bHRzGAEgAygLMhgudmlnby5jb3JlLnYxLkl0ZW1SZXN1bHQiJwoYUmVmcmVzaFRodW1ibmFpbHNSZXF1ZXN0EgsKA2lkcxgBIAMoCSJGChlSZWZyZXNoVGh1bWJuYWlsc1Jlc3BvbnNlEikKB3Jlc3VsdHMYASADKAsyGC52aWdvLmNvcmUudjEuSXRlbVJlc3VsdCreAQoJU3luY1N0YXRlEhoKFlNZTkNfU1RBVEVfVU5TUEVDSUZJRUQQABIWChJTWU5DX1NUQVRFX0lOX1NZTkMQARIdChlTWU5DX1NUQVRFX1BFTkRJTkdfVVBMT0FEEAISGAoUU1lOQ19TVEFURV9VUExPQURJTkcQAxIdChlTWU5DX1NUQVRFX1BFTkRJTkdfREVMRVRFEAQSFwoTU1lOQ19TVEFURV9ERUxFVElORxAFEhQKEFNZTkNfU1RBVEVfRVJST1IQBhIWChJTWU5DX1NUQVRFX1RWX09OTFkQBypTCglUYWdPcmlnaW4SGgoWVEFHX09SSUdJTl9VTlNQRUNJRklFRBAAEhUKEVRBR19PUklHSU5fU1lTVEVNEAESEwoPVEFHX09SSUdJTl9VU0VSEAIqZwoNQXJ0d29ya09yaWdpbhIeChpBUlRXT1JLX09SSUdJTl9VTlNQRUNJRklFRBAAEhoKFkFSVFdPUktfT1JJR0lOX1NPVVJDRVMQARIaChZBUlRXT1JLX09SSUdJTl9UVl9PTkxZEAIy6gYKDkxpYnJhcnlTZXJ2aWNlElUKDExpc3RBcnR3b3JrcxIhLnZpZ28uY29yZS52MS5MaXN0QXJ0d29ya3NSZXF1ZXN0GiIudmlnby5jb3JlLnYxLkxpc3RBcnR3b3Jrc1Jlc3BvbnNlEk8KCkdldEFydHdvcmsSHy52aWdvLmNvcmUudjEuR2V0QXJ0d29ya1JlcXVlc3QaIC52aWdvLmNvcmUudjEuR2V0QXJ0d29ya1Jlc3BvbnNlEkkKCExpc3RUYWdzEh0udmlnby5jb3JlLnYxLkxpc3RUYWdzUmVxdWVzdBoeLnZpZ28uY29yZS52MS5MaXN0VGFnc1Jlc3BvbnNlEk8KClVwZGF0ZVRhZ3MSHy52aWdvLmNvcmUudjEuVXBkYXRlVGFnc1JlcXVlc3QaIC52aWdvLmNvcmUudjEuVXBkYXRlVGFnc1Jlc3BvbnNlElgKDURlbGV0ZUFydHdvcmsSIi52aWdvLmNvcmUudjEuRGVsZXRlQXJ0d29ya1JlcXVlc3QaIy52aWdvLmNvcmUudjEuRGVsZXRlQXJ0d29ya1Jlc3BvbnNlElsKDkRlbGV0ZUFydHdvcmtzEiMudmlnby5jb3JlLnYxLkRlbGV0ZUFydHdvcmtzUmVxdWVzdBokLnZpZ28uY29yZS52MS5EZWxldGVBcnR3b3Jrc1Jlc3BvbnNlEmQKEVJlZnJlc2hUaHVtYm5haWxzEiYudmlnby5jb3JlLnYxLlJlZnJlc2hUaHVtYm5haWxzUmVxdWVzdBonLnZpZ28uY29yZS52MS5SZWZyZXNoVGh1bWJuYWlsc1Jlc3BvbnNlElIKC0Nyb3BBcnR3b3JrEiAudmlnby5jb3JlLnYxLkNyb3BBcnR3b3JrUmVxdWVzdBohLnZpZ28uY29yZS52MS5Dcm9wQXJ0d29ya1Jlc3BvbnNlElIKC0xpc3RTb3VyY2VzEiAudmlnby5jb3JlLnYxLkxpc3RTb3VyY2VzUmVxdWVzdBohLnZpZ28uY29yZS52MS5MaXN0U291cmNlc1Jlc3BvbnNlEk8KClN5bmNTb3VyY2USHy52aWdvLmNvcmUudjEuU3luY1NvdXJjZVJlcXVlc3QaIC52aWdvLmNvcmUudjEuU3luY1NvdXJjZVJlc3BvbnNlQjJaMGdpdGh1Yi5jb20veXVoYTAvdmlnby9nZW4vZ28vdmlnby9jb3JlL3YxO2NvcmV2MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_vigo_core_v1_core]);
 
 /**
  * @generated from message vigo.core.v1.Tag
@@ -179,6 +179,14 @@ export type ListArtworksRequest = Message<"vigo.core.v1.ListArtworksRequest"> & 
    * @generated from field: string page_token = 5;
    */
   pageToken: string;
+
+  /**
+   * Restricts results to artworks vigo manages or not; combined with tags and
+   * query. Unspecified means both.
+   *
+   * @generated from field: vigo.core.v1.ArtworkOrigin origin = 6;
+   */
+  origin: ArtworkOrigin;
 };
 
 /**
@@ -578,6 +586,104 @@ export const SyncSourceResponseSchema: GenMessage<SyncSourceResponse> = /*@__PUR
   messageDesc(file_vigo_core_v1_library, 21);
 
 /**
+ * @generated from message vigo.core.v1.ItemResult
+ */
+export type ItemResult = Message<"vigo.core.v1.ItemResult"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * Empty on success, else a Connect error code name such as
+   * "failed_precondition".
+   *
+   * @generated from field: string error_code = 2;
+   */
+  errorCode: string;
+
+  /**
+   * @generated from field: string error_message = 3;
+   */
+  errorMessage: string;
+};
+
+/**
+ * Describes the message vigo.core.v1.ItemResult.
+ * Use `create(ItemResultSchema)` to create a new message.
+ */
+export const ItemResultSchema: GenMessage<ItemResult> = /*@__PURE__*/
+  messageDesc(file_vigo_core_v1_library, 22);
+
+/**
+ * @generated from message vigo.core.v1.DeleteArtworksRequest
+ */
+export type DeleteArtworksRequest = Message<"vigo.core.v1.DeleteArtworksRequest"> & {
+  /**
+   * @generated from field: repeated string ids = 1;
+   */
+  ids: string[];
+};
+
+/**
+ * Describes the message vigo.core.v1.DeleteArtworksRequest.
+ * Use `create(DeleteArtworksRequestSchema)` to create a new message.
+ */
+export const DeleteArtworksRequestSchema: GenMessage<DeleteArtworksRequest> = /*@__PURE__*/
+  messageDesc(file_vigo_core_v1_library, 23);
+
+/**
+ * @generated from message vigo.core.v1.DeleteArtworksResponse
+ */
+export type DeleteArtworksResponse = Message<"vigo.core.v1.DeleteArtworksResponse"> & {
+  /**
+   * @generated from field: repeated vigo.core.v1.ItemResult results = 1;
+   */
+  results: ItemResult[];
+};
+
+/**
+ * Describes the message vigo.core.v1.DeleteArtworksResponse.
+ * Use `create(DeleteArtworksResponseSchema)` to create a new message.
+ */
+export const DeleteArtworksResponseSchema: GenMessage<DeleteArtworksResponse> = /*@__PURE__*/
+  messageDesc(file_vigo_core_v1_library, 24);
+
+/**
+ * @generated from message vigo.core.v1.RefreshThumbnailsRequest
+ */
+export type RefreshThumbnailsRequest = Message<"vigo.core.v1.RefreshThumbnailsRequest"> & {
+  /**
+   * @generated from field: repeated string ids = 1;
+   */
+  ids: string[];
+};
+
+/**
+ * Describes the message vigo.core.v1.RefreshThumbnailsRequest.
+ * Use `create(RefreshThumbnailsRequestSchema)` to create a new message.
+ */
+export const RefreshThumbnailsRequestSchema: GenMessage<RefreshThumbnailsRequest> = /*@__PURE__*/
+  messageDesc(file_vigo_core_v1_library, 25);
+
+/**
+ * @generated from message vigo.core.v1.RefreshThumbnailsResponse
+ */
+export type RefreshThumbnailsResponse = Message<"vigo.core.v1.RefreshThumbnailsResponse"> & {
+  /**
+   * @generated from field: repeated vigo.core.v1.ItemResult results = 1;
+   */
+  results: ItemResult[];
+};
+
+/**
+ * Describes the message vigo.core.v1.RefreshThumbnailsResponse.
+ * Use `create(RefreshThumbnailsResponseSchema)` to create a new message.
+ */
+export const RefreshThumbnailsResponseSchema: GenMessage<RefreshThumbnailsResponse> = /*@__PURE__*/
+  messageDesc(file_vigo_core_v1_library, 26);
+
+/**
  * @generated from enum vigo.core.v1.SyncState
  */
 export enum SyncState {
@@ -663,6 +769,36 @@ export const TagOriginSchema: GenEnum<TagOrigin> = /*@__PURE__*/
   enumDesc(file_vigo_core_v1_library, 1);
 
 /**
+ * @generated from enum vigo.core.v1.ArtworkOrigin
+ */
+export enum ArtworkOrigin {
+  /**
+   * @generated from enum value: ARTWORK_ORIGIN_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Artworks with at least one source (sync state other than TV_ONLY).
+   *
+   * @generated from enum value: ARTWORK_ORIGIN_SOURCES = 1;
+   */
+  SOURCES = 1,
+
+  /**
+   * Artworks on the TV only: Art Store and uploads made outside vigo.
+   *
+   * @generated from enum value: ARTWORK_ORIGIN_TV_ONLY = 2;
+   */
+  TV_ONLY = 2,
+}
+
+/**
+ * Describes the enum vigo.core.v1.ArtworkOrigin.
+ */
+export const ArtworkOriginSchema: GenEnum<ArtworkOrigin> = /*@__PURE__*/
+  enumDesc(file_vigo_core_v1_library, 2);
+
+/**
  * LibraryService is vigo's index of artworks: everything on the TV plus
  * everything in configured sources, with tags and sync state.
  *
@@ -729,6 +865,32 @@ export const LibraryService: GenService<{
     methodKind: "unary";
     input: typeof DeleteArtworkRequestSchema;
     output: typeof DeleteArtworkResponseSchema;
+  },
+  /**
+   * DeleteArtwork for several artworks. Each is handled independently; the
+   * response reports every id's outcome, so one failure does not stop the
+   * others.
+   *
+   * @generated from rpc vigo.core.v1.LibraryService.DeleteArtworks
+   */
+  deleteArtworks: {
+    methodKind: "unary";
+    input: typeof DeleteArtworksRequestSchema;
+    output: typeof DeleteArtworksResponseSchema;
+  },
+  /**
+   * Queues a new download of the TV's thumbnail for TV-only artworks and
+   * returns once queued; a LibraryChanged event follows when each new
+   * thumbnail is stored. Stored thumbnails are otherwise never re-downloaded:
+   * the TV's artwork does not change. Ids that are not TV-only fail with
+   * invalid_argument in their result.
+   *
+   * @generated from rpc vigo.core.v1.LibraryService.RefreshThumbnails
+   */
+  refreshThumbnails: {
+    methodKind: "unary";
+    input: typeof RefreshThumbnailsRequestSchema;
+    output: typeof RefreshThumbnailsResponseSchema;
   },
   /**
    * Crops an artwork in place in its source to the given rectangle, in

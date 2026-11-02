@@ -103,13 +103,13 @@ func New(opts Options) (*Server, error) {
 	api.Handle(corev1connect.NewArtServiceHandler(h))
 	api.Handle(corev1connect.NewPairingServiceHandler(h))
 	api.Handle(corev1connect.NewConfigServiceHandler(h))
-	api.HandleFunc("GET /art/{content_id}/thumbnail", thumbnailHandler(opts.TV))
+	api.HandleFunc("GET /art/{content_id}/thumbnail", thumbnailHandler(opts.TV, opts.Library))
 	lh := &libraryHandlers{lib: opts.Library}
 	api.Handle(corev1connect.NewLibraryServiceHandler(lh))
 	api.HandleFunc("GET /library/{artwork_id}/thumbnail", imageHandler(opts.Library, (*library.Library).Thumbnail))
 	api.HandleFunc("GET /library/{artwork_id}/image", imageHandler(opts.Library, (*library.Library).Preview))
 	api.HandleFunc("POST /sources/{source_id}/files", sourceFileHandler(opts.Library, opts.MaxUploadBytes, opts.Log))
-	s.api = s.toLeader(api)
+	s.api = storedThumbnails(opts.Library, s.toLeader(api))
 	return s, nil
 }
 
@@ -341,9 +341,25 @@ func (c *cache) invalidate() {
 	c.mu.Unlock()
 }
 
-func thumbnailHandler(svc *tv.Service) http.HandlerFunc {
+// thumbnailHandler serves the TV content id's artwork thumbnail; a vigo
+// upload maps to its source artwork. Without a library, or for content not
+// indexed yet, it asks the TV.
+func thumbnailHandler(svc *tv.Service, lib *library.Library) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, etag, err := svc.Thumbnail(r.Context(), r.PathValue("content_id"))
+		cid := r.PathValue("content_id")
+		if lib != nil {
+			if id, err := lib.ArtworkForContent(r.Context(), cid); err == nil {
+				data, etag, err := lib.Thumbnail(r.Context(), id)
+				if err != nil {
+					writeErr(w, err)
+					return
+				}
+				setThumbCaching(w, id)
+				serveJPEG(w, r, data, etag)
+				return
+			}
+		}
+		data, etag, err := svc.Thumbnail(r.Context(), cid)
 		if err != nil {
 			writeErr(w, err)
 			return

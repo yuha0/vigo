@@ -38,6 +38,18 @@ service LibraryService {
   // deleted from the TV directly, and only if they are uploads.
   rpc DeleteArtwork(DeleteArtworkRequest) returns (DeleteArtworkResponse);
 
+  // DeleteArtwork for several artworks. Each is handled independently; the
+  // response reports every id's outcome, so one failure does not stop the
+  // others.
+  rpc DeleteArtworks(DeleteArtworksRequest) returns (DeleteArtworksResponse);
+
+  // Queues a new download of the TV's thumbnail for TV-only artworks and
+  // returns once queued; a LibraryChanged event follows when each new
+  // thumbnail is stored. Stored thumbnails are otherwise never re-downloaded:
+  // the TV's artwork does not change. Ids that are not TV-only fail with
+  // invalid_argument in their result.
+  rpc RefreshThumbnails(RefreshThumbnailsRequest) returns (RefreshThumbnailsResponse);
+
   // Crops an artwork in place in its source to the given rectangle, in
   // pixels of the upright (EXIF-applied) original. Requires a source that
   // supports editing. The content changes, so the response carries the new
@@ -116,6 +128,17 @@ message ListArtworksRequest {
   bool include_deleting = 3;
   int32 page_size = 4;
   string page_token = 5;
+  // Restricts results to artworks vigo manages or not; combined with tags and
+  // query. Unspecified means both.
+  ArtworkOrigin origin = 6;
+}
+
+enum ArtworkOrigin {
+  ARTWORK_ORIGIN_UNSPECIFIED = 0;
+  // Artworks with at least one source (sync state other than TV_ONLY).
+  ARTWORK_ORIGIN_SOURCES = 1;
+  // Artworks on the TV only: Art Store and uploads made outside vigo.
+  ARTWORK_ORIGIN_TV_ONLY = 2;
 }
 
 message ListArtworksResponse {
@@ -207,3 +230,27 @@ message SyncSourceRequest {
 }
 
 message SyncSourceResponse {}
+
+message ItemResult {
+  string id = 1;
+  // Empty on success, else a Connect error code name such as
+  // "failed_precondition".
+  string error_code = 2;
+  string error_message = 3;
+}
+
+message DeleteArtworksRequest {
+  repeated string ids = 1;
+}
+
+message DeleteArtworksResponse {
+  repeated ItemResult results = 1;
+}
+
+message RefreshThumbnailsRequest {
+  repeated string ids = 1;
+}
+
+message RefreshThumbnailsResponse {
+  repeated ItemResult results = 1;
+}

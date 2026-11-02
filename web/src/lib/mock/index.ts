@@ -209,6 +209,14 @@ export function createMockBackend(options: MockBackendOptions = {}): MockBackend
         await wait();
         return { artwork: library.deleteArtwork(req.id) };
       },
+      async deleteArtworks(req) {
+        await wait();
+        return { results: library.deleteArtworks(req.ids) };
+      },
+      async refreshThumbnails(req) {
+        await wait();
+        return { results: library.refreshThumbnails(req.ids) };
+      },
       async cropArtwork(req) {
         await wait();
         return { artwork: library.cropArtwork(req.id, req.rect) };
@@ -295,9 +303,10 @@ export function createMockBackend(options: MockBackendOptions = {}): MockBackend
       if (!a) return generatedArtUrl(contentId);
       return uploaded.get(a.id)?.thumbnail ?? generatedArtUrl(seed(a), aspect(a));
     },
-    thumbnailUrl(id) {
+    thumbnailUrl(id, version) {
       const a = byId(id);
-      return uploaded.get(id)?.thumbnail ?? (a ? generatedArtUrl(seed(a), aspect(a)) : generatedArtUrl(id));
+      const url = uploaded.get(id)?.thumbnail ?? (a ? generatedArtUrl(seed(a), aspect(a)) : generatedArtUrl(id));
+      return version ? `${url}#v=${version}` : url;
     },
     imageUrl(id) {
       const a = byId(id);

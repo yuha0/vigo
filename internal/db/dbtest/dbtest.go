@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -101,4 +102,23 @@ func (e *Env) Reopen(t testing.TB, keyring []byte) *db.DB {
 	}
 	t.Cleanup(d.Close)
 	return d
+}
+
+// WaitSessionGone waits until the server backend with pid has exited. Closing
+// or terminating a session returns before Postgres has released its locks, so
+// tests that assert a dead session's locks are gone must wait for this first.
+func (e *Env) WaitSessionGone(t testing.TB, pid uint32) {
+	t.Helper()
+	ctx := context.Background()
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		var alive bool
+		err := e.DB.Pool().QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid = $1)`, int32(pid)).Scan(&alive)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !alive {
+			return
+		}
+	}
+	t.Fatalf("backend %d still running after 5s", pid)
 }

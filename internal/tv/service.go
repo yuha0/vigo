@@ -57,16 +57,14 @@ type Options struct {
 	// Replica names this process in Status, usually the pod name.
 	Replica string
 
-	PollInterval         time.Duration
-	RequestTimeout       time.Duration
-	UploadTimeout        time.Duration
-	PairTimeout          time.Duration
-	WakeTimeout          time.Duration
-	WakePollInterval     time.Duration
-	ReconnectMin         time.Duration
-	ReconnectMax         time.Duration
-	ThumbnailCacheSize   int
-	ThumbnailConcurrency int
+	PollInterval     time.Duration
+	RequestTimeout   time.Duration
+	UploadTimeout    time.Duration
+	PairTimeout      time.Duration
+	WakeTimeout      time.Duration
+	WakePollInterval time.Duration
+	ReconnectMin     time.Duration
+	ReconnectMax     time.Duration
 	// ThumbnailRetryInterval spaces retries of a fresh upload's thumbnail.
 	ThumbnailRetryInterval time.Duration
 	// Prepare turns an upload into the JPEG sent to the TV; nil is
@@ -89,12 +87,6 @@ func (o *Options) setDefaults() {
 	def(&o.ReconnectMin, time.Second)
 	def(&o.ReconnectMax, time.Minute)
 	def(&o.ThumbnailRetryInterval, 3*time.Second)
-	if o.ThumbnailCacheSize <= 0 {
-		o.ThumbnailCacheSize = 512
-	}
-	if o.ThumbnailConcurrency <= 0 {
-		o.ThumbnailConcurrency = 2
-	}
 	if o.Log == nil {
 		o.Log = discardLogger()
 	}
@@ -155,7 +147,10 @@ type Service struct {
 	modelObserved string
 	modelAt       time.Time
 
-	thumbs *thumbCache
+	thumbs *thumbFetcher
+	// busy counts interactive TV calls in flight; background work yields to
+	// them.
+	busy interactive
 
 	reconnect chan struct{}
 	pollNow   chan struct{}
@@ -184,7 +179,7 @@ func New(opts Options) (*Service, error) {
 		store:     opts.Store,
 		subs:      map[*subscriber]struct{}{},
 		announced: map[string]time.Time{},
-		thumbs:    newThumbCache(opts.ThumbnailCacheSize, opts.ThumbnailConcurrency),
+		thumbs:    newThumbFetcher(),
 		reconnect: make(chan struct{}, 1),
 		pollNow:   make(chan struct{}, 1),
 		st: state{
@@ -249,8 +244,11 @@ func (s *Service) Run(ctx context.Context) error {
 	s.mu.Unlock()
 
 	var wg sync.WaitGroup
-	wg.Go(func() { s.pollLoop(ctx) })
-	wg.Go(func() { s.connLoop(ctx) })
+	// The service's own loops are background work: they never make a
+	// prefetch wait.
+	bg := Background(ctx)
+	wg.Go(func() { s.pollLoop(bg) })
+	wg.Go(func() { s.connLoop(bg) })
 	wg.Wait()
 
 	s.remoteMu.Lock()

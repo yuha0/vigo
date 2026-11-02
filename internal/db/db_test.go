@@ -237,7 +237,9 @@ func TestIntegrationState(t *testing.T) {
 	}
 
 	// The lease dies with its session.
+	pid := conn.PgConn().PID()
 	conn.Close(ctx)
+	e.WaitSessionGone(t, pid)
 	if _, err := e.DB.PutState(ctx, "homekit", lease, "a", []byte("x"), 0); !errors.Is(err, db.ErrNotLeader) {
 		t.Errorf("write after the session died: %v", err)
 	}

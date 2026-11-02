@@ -29,22 +29,22 @@ export function SettingControl({
   const [draft, setDraft] = useState<number | null>(null);
   const kind = setting.kind;
 
+  // A segmented control can be too wide to sit beside the label on a phone; it may wrap, still right-aligned.
+  const segmented = kind.case === "enum" && isCompact(setting);
+
   const value =
     kind.case === "range" && draft !== null ? (meta.format ? meta.format(draft) : String(draft)) : displayValue(setting);
 
   return (
     <div className="py-5 first:pt-1 last:pb-1" data-setting={setting.key} data-kind={kind.case ?? "unknown"}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+      {/* Every kind shares one layout: the label on the left with its control or value on the right, then the description underneath. */}
+      <div className={cn("flex items-center justify-between gap-x-4 gap-y-3", segmented && "flex-wrap")}>
+        <div className={cn("min-w-0 flex-1", segmented && "basis-48")}>
           <p id={labelId} className="text-[0.9375rem] font-medium">
             {meta.label}
           </p>
-          {meta.description && (
-            <p id={descId} className="mt-1 max-w-prose text-sm text-muted-foreground">
-              {meta.description}
-            </p>
-          )}
         </div>
+        <div data-slot="setting-control" className="ml-auto flex shrink-0 justify-end">
         {kind.case === "toggle" ? (
           <Switch
             aria-labelledby={labelId}
@@ -56,8 +56,17 @@ export function SettingControl({
           />
         ) : kind.case === "range" ? (
           <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-sm font-medium tabular-nums">{value}</span>
+        ) : kind.case === "enum" ? (
+          <EnumControl setting={setting} labelId={labelId} disabled={disabled} onChange={onChange} />
         ) : null}
+        </div>
       </div>
+
+      {meta.description && (
+        <p id={descId} className="mt-1.5 max-w-prose text-sm text-muted-foreground">
+          {meta.description}
+        </p>
+      )}
 
       {kind.case === "range" && (
         <div className="mt-2">
@@ -83,7 +92,6 @@ export function SettingControl({
         </div>
       )}
 
-      {kind.case === "enum" && <EnumControl setting={setting} labelId={labelId} disabled={disabled} onChange={onChange} />}
 
       {kind.case === undefined && <p className="mt-2 text-sm text-muted-foreground">This setting has a type vigo can't edit yet.</p>}
 
@@ -99,6 +107,19 @@ export function SettingControl({
   );
 }
 
+function enumOptions(setting: Setting): string[] {
+  if (setting.kind.case !== "enum") return [];
+  const { value, options } = setting.kind.value;
+  return options.includes(value) || !value ? options : [value, ...options];
+}
+
+function isCompact(setting: Setting): boolean {
+  const meta = settingMeta(setting.key);
+  const label = (o: string) => (meta.option ? meta.option(o) : o);
+  const all = enumOptions(setting);
+  return all.length <= 4 && all.every((o) => label(o).length <= 12);
+}
+
 function EnumControl({
   setting,
   labelId,
@@ -111,16 +132,15 @@ function EnumControl({
   onChange: (v: SettingValue) => void;
 }) {
   if (setting.kind.case !== "enum") return null;
-  const { value, options } = setting.kind.value;
+  const { value } = setting.kind.value;
   const meta = settingMeta(setting.key);
   const label = (o: string) => (meta.option ? meta.option(o) : o);
-  const all = options.includes(value) || !value ? options : [value, ...options];
-  const compact = all.length <= 4 && all.every((o) => label(o).length <= 12);
+  const all = enumOptions(setting);
 
-  if (compact) {
+  if (isCompact(setting)) {
     return (
       <Segmented
-        className="mt-3"
+        className="w-auto"
         aria-label={meta.label}
         value={value}
         disabled={disabled}
@@ -131,10 +151,11 @@ function EnumControl({
   }
   return (
     <Select value={value} disabled={disabled} onValueChange={(v) => onChange({ case: "enumValue", value: v })}>
-      <SelectTrigger className="mt-3 sm:max-w-xs" aria-labelledby={labelId}>
-        <SelectValue />
+      {/* Hugs its value, so the label beside it keeps one line on a phone. */}
+      <SelectTrigger className="w-auto gap-2 px-3.5 whitespace-nowrap" aria-labelledby={labelId}>
+        <SelectValue>{(meta.optionShort ?? label)(value)}</SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent align="end" className="w-auto min-w-44">
         {all.map((o) => (
           <SelectItem key={o} value={o}>
             {label(o)}

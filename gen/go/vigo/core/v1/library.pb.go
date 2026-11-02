@@ -139,6 +139,57 @@ func (TagOrigin) EnumDescriptor() ([]byte, []int) {
 	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{1}
 }
 
+type ArtworkOrigin int32
+
+const (
+	ArtworkOrigin_ARTWORK_ORIGIN_UNSPECIFIED ArtworkOrigin = 0
+	// Artworks with at least one source (sync state other than TV_ONLY).
+	ArtworkOrigin_ARTWORK_ORIGIN_SOURCES ArtworkOrigin = 1
+	// Artworks on the TV only: Art Store and uploads made outside vigo.
+	ArtworkOrigin_ARTWORK_ORIGIN_TV_ONLY ArtworkOrigin = 2
+)
+
+// Enum value maps for ArtworkOrigin.
+var (
+	ArtworkOrigin_name = map[int32]string{
+		0: "ARTWORK_ORIGIN_UNSPECIFIED",
+		1: "ARTWORK_ORIGIN_SOURCES",
+		2: "ARTWORK_ORIGIN_TV_ONLY",
+	}
+	ArtworkOrigin_value = map[string]int32{
+		"ARTWORK_ORIGIN_UNSPECIFIED": 0,
+		"ARTWORK_ORIGIN_SOURCES":     1,
+		"ARTWORK_ORIGIN_TV_ONLY":     2,
+	}
+)
+
+func (x ArtworkOrigin) Enum() *ArtworkOrigin {
+	p := new(ArtworkOrigin)
+	*p = x
+	return p
+}
+
+func (x ArtworkOrigin) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ArtworkOrigin) Descriptor() protoreflect.EnumDescriptor {
+	return file_vigo_core_v1_library_proto_enumTypes[2].Descriptor()
+}
+
+func (ArtworkOrigin) Type() protoreflect.EnumType {
+	return &file_vigo_core_v1_library_proto_enumTypes[2]
+}
+
+func (x ArtworkOrigin) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ArtworkOrigin.Descriptor instead.
+func (ArtworkOrigin) EnumDescriptor() ([]byte, []int) {
+	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{2}
+}
+
 type Tag struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// "namespace/value" for system tags; user tags have no namespace.
@@ -388,8 +439,11 @@ type ListArtworksRequest struct {
 	IncludeDeleting bool   `protobuf:"varint,3,opt,name=include_deleting,json=includeDeleting,proto3" json:"include_deleting,omitempty"`
 	PageSize        int32  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	PageToken       string `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Restricts results to artworks vigo manages or not; combined with tags and
+	// query. Unspecified means both.
+	Origin        ArtworkOrigin `protobuf:"varint,6,opt,name=origin,proto3,enum=vigo.core.v1.ArtworkOrigin" json:"origin,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListArtworksRequest) Reset() {
@@ -455,6 +509,13 @@ func (x *ListArtworksRequest) GetPageToken() string {
 		return x.PageToken
 	}
 	return ""
+}
+
+func (x *ListArtworksRequest) GetOrigin() ArtworkOrigin {
+	if x != nil {
+		return x.Origin
+	}
+	return ArtworkOrigin_ARTWORK_ORIGIN_UNSPECIFIED
 }
 
 type ListArtworksResponse struct {
@@ -1372,6 +1433,244 @@ func (*SyncSourceResponse) Descriptor() ([]byte, []int) {
 	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{21}
 }
 
+type ItemResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Empty on success, else a Connect error code name such as
+	// "failed_precondition".
+	ErrorCode     string `protobuf:"bytes,2,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	ErrorMessage  string `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ItemResult) Reset() {
+	*x = ItemResult{}
+	mi := &file_vigo_core_v1_library_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ItemResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ItemResult) ProtoMessage() {}
+
+func (x *ItemResult) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_core_v1_library_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ItemResult.ProtoReflect.Descriptor instead.
+func (*ItemResult) Descriptor() ([]byte, []int) {
+	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ItemResult) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ItemResult) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *ItemResult) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+type DeleteArtworksRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ids           []string               `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteArtworksRequest) Reset() {
+	*x = DeleteArtworksRequest{}
+	mi := &file_vigo_core_v1_library_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteArtworksRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteArtworksRequest) ProtoMessage() {}
+
+func (x *DeleteArtworksRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_core_v1_library_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteArtworksRequest.ProtoReflect.Descriptor instead.
+func (*DeleteArtworksRequest) Descriptor() ([]byte, []int) {
+	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *DeleteArtworksRequest) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+type DeleteArtworksResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*ItemResult          `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteArtworksResponse) Reset() {
+	*x = DeleteArtworksResponse{}
+	mi := &file_vigo_core_v1_library_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteArtworksResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteArtworksResponse) ProtoMessage() {}
+
+func (x *DeleteArtworksResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_core_v1_library_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteArtworksResponse.ProtoReflect.Descriptor instead.
+func (*DeleteArtworksResponse) Descriptor() ([]byte, []int) {
+	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DeleteArtworksResponse) GetResults() []*ItemResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type RefreshThumbnailsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ids           []string               `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshThumbnailsRequest) Reset() {
+	*x = RefreshThumbnailsRequest{}
+	mi := &file_vigo_core_v1_library_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshThumbnailsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshThumbnailsRequest) ProtoMessage() {}
+
+func (x *RefreshThumbnailsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_core_v1_library_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshThumbnailsRequest.ProtoReflect.Descriptor instead.
+func (*RefreshThumbnailsRequest) Descriptor() ([]byte, []int) {
+	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *RefreshThumbnailsRequest) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+type RefreshThumbnailsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*ItemResult          `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshThumbnailsResponse) Reset() {
+	*x = RefreshThumbnailsResponse{}
+	mi := &file_vigo_core_v1_library_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshThumbnailsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshThumbnailsResponse) ProtoMessage() {}
+
+func (x *RefreshThumbnailsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_vigo_core_v1_library_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshThumbnailsResponse.ProtoReflect.Descriptor instead.
+func (*RefreshThumbnailsResponse) Descriptor() ([]byte, []int) {
+	return file_vigo_core_v1_library_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *RefreshThumbnailsResponse) GetResults() []*ItemResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
 var File_vigo_core_v1_library_proto protoreflect.FileDescriptor
 
 const file_vigo_core_v1_library_proto_rawDesc = "" +
@@ -1399,14 +1698,15 @@ const file_vigo_core_v1_library_proto_rawDesc = "" +
 	"sync_error\x18\n" +
 	" \x01(\tR\tsyncError\x129\n" +
 	"\n" +
-	"updated_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xa6\x01\n" +
+	"updated_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xdb\x01\n" +
 	"\x13ListArtworksRequest\x12\x12\n" +
 	"\x04tags\x18\x01 \x03(\tR\x04tags\x12\x14\n" +
 	"\x05query\x18\x02 \x01(\tR\x05query\x12)\n" +
 	"\x10include_deleting\x18\x03 \x01(\bR\x0fincludeDeleting\x12\x1b\n" +
 	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x05 \x01(\tR\tpageToken\"\x8e\x01\n" +
+	"page_token\x18\x05 \x01(\tR\tpageToken\x123\n" +
+	"\x06origin\x18\x06 \x01(\x0e2\x1b.vigo.core.v1.ArtworkOriginR\x06origin\"\x8e\x01\n" +
 	"\x14ListArtworksResponse\x128\n" +
 	"\bartworks\x18\x01 \x03(\v2\x1c.vigo.core.v1.LibraryArtworkR\bartworks\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x14\n" +
@@ -1460,7 +1760,21 @@ const file_vigo_core_v1_library_proto_rawDesc = "" +
 	"\asources\x18\x01 \x03(\v2\x14.vigo.core.v1.SourceR\asources\"0\n" +
 	"\x11SyncSourceRequest\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\tR\bsourceId\"\x14\n" +
-	"\x12SyncSourceResponse*\xde\x01\n" +
+	"\x12SyncSourceResponse\"`\n" +
+	"\n" +
+	"ItemResult\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\tR\terrorCode\x12#\n" +
+	"\rerror_message\x18\x03 \x01(\tR\ferrorMessage\")\n" +
+	"\x15DeleteArtworksRequest\x12\x10\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\"L\n" +
+	"\x16DeleteArtworksResponse\x122\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.vigo.core.v1.ItemResultR\aresults\",\n" +
+	"\x18RefreshThumbnailsRequest\x12\x10\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\"O\n" +
+	"\x19RefreshThumbnailsResponse\x122\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.vigo.core.v1.ItemResultR\aresults*\xde\x01\n" +
 	"\tSyncState\x12\x1a\n" +
 	"\x16SYNC_STATE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12SYNC_STATE_IN_SYNC\x10\x01\x12\x1d\n" +
@@ -1473,7 +1787,11 @@ const file_vigo_core_v1_library_proto_rawDesc = "" +
 	"\tTagOrigin\x12\x1a\n" +
 	"\x16TAG_ORIGIN_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11TAG_ORIGIN_SYSTEM\x10\x01\x12\x13\n" +
-	"\x0fTAG_ORIGIN_USER\x10\x022\xa7\x05\n" +
+	"\x0fTAG_ORIGIN_USER\x10\x02*g\n" +
+	"\rArtworkOrigin\x12\x1e\n" +
+	"\x1aARTWORK_ORIGIN_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16ARTWORK_ORIGIN_SOURCES\x10\x01\x12\x1a\n" +
+	"\x16ARTWORK_ORIGIN_TV_ONLY\x10\x022\xea\x06\n" +
 	"\x0eLibraryService\x12U\n" +
 	"\fListArtworks\x12!.vigo.core.v1.ListArtworksRequest\x1a\".vigo.core.v1.ListArtworksResponse\x12O\n" +
 	"\n" +
@@ -1481,7 +1799,9 @@ const file_vigo_core_v1_library_proto_rawDesc = "" +
 	"\bListTags\x12\x1d.vigo.core.v1.ListTagsRequest\x1a\x1e.vigo.core.v1.ListTagsResponse\x12O\n" +
 	"\n" +
 	"UpdateTags\x12\x1f.vigo.core.v1.UpdateTagsRequest\x1a .vigo.core.v1.UpdateTagsResponse\x12X\n" +
-	"\rDeleteArtwork\x12\".vigo.core.v1.DeleteArtworkRequest\x1a#.vigo.core.v1.DeleteArtworkResponse\x12R\n" +
+	"\rDeleteArtwork\x12\".vigo.core.v1.DeleteArtworkRequest\x1a#.vigo.core.v1.DeleteArtworkResponse\x12[\n" +
+	"\x0eDeleteArtworks\x12#.vigo.core.v1.DeleteArtworksRequest\x1a$.vigo.core.v1.DeleteArtworksResponse\x12d\n" +
+	"\x11RefreshThumbnails\x12&.vigo.core.v1.RefreshThumbnailsRequest\x1a'.vigo.core.v1.RefreshThumbnailsResponse\x12R\n" +
 	"\vCropArtwork\x12 .vigo.core.v1.CropArtworkRequest\x1a!.vigo.core.v1.CropArtworkResponse\x12R\n" +
 	"\vListSources\x12 .vigo.core.v1.ListSourcesRequest\x1a!.vigo.core.v1.ListSourcesResponse\x12O\n" +
 	"\n" +
@@ -1499,74 +1819,87 @@ func file_vigo_core_v1_library_proto_rawDescGZIP() []byte {
 	return file_vigo_core_v1_library_proto_rawDescData
 }
 
-var file_vigo_core_v1_library_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_vigo_core_v1_library_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_vigo_core_v1_library_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_vigo_core_v1_library_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_vigo_core_v1_library_proto_goTypes = []any{
-	(SyncState)(0),                // 0: vigo.core.v1.SyncState
-	(TagOrigin)(0),                // 1: vigo.core.v1.TagOrigin
-	(*Tag)(nil),                   // 2: vigo.core.v1.Tag
-	(*SourceRef)(nil),             // 3: vigo.core.v1.SourceRef
-	(*LibraryArtwork)(nil),        // 4: vigo.core.v1.LibraryArtwork
-	(*ListArtworksRequest)(nil),   // 5: vigo.core.v1.ListArtworksRequest
-	(*ListArtworksResponse)(nil),  // 6: vigo.core.v1.ListArtworksResponse
-	(*GetArtworkRequest)(nil),     // 7: vigo.core.v1.GetArtworkRequest
-	(*GetArtworkResponse)(nil),    // 8: vigo.core.v1.GetArtworkResponse
-	(*TagCount)(nil),              // 9: vigo.core.v1.TagCount
-	(*ListTagsRequest)(nil),       // 10: vigo.core.v1.ListTagsRequest
-	(*ListTagsResponse)(nil),      // 11: vigo.core.v1.ListTagsResponse
-	(*UpdateTagsRequest)(nil),     // 12: vigo.core.v1.UpdateTagsRequest
-	(*UpdateTagsResponse)(nil),    // 13: vigo.core.v1.UpdateTagsResponse
-	(*DeleteArtworkRequest)(nil),  // 14: vigo.core.v1.DeleteArtworkRequest
-	(*DeleteArtworkResponse)(nil), // 15: vigo.core.v1.DeleteArtworkResponse
-	(*Rect)(nil),                  // 16: vigo.core.v1.Rect
-	(*CropArtworkRequest)(nil),    // 17: vigo.core.v1.CropArtworkRequest
-	(*CropArtworkResponse)(nil),   // 18: vigo.core.v1.CropArtworkResponse
-	(*Source)(nil),                // 19: vigo.core.v1.Source
-	(*ListSourcesRequest)(nil),    // 20: vigo.core.v1.ListSourcesRequest
-	(*ListSourcesResponse)(nil),   // 21: vigo.core.v1.ListSourcesResponse
-	(*SyncSourceRequest)(nil),     // 22: vigo.core.v1.SyncSourceRequest
-	(*SyncSourceResponse)(nil),    // 23: vigo.core.v1.SyncSourceResponse
-	(ContentType)(0),              // 24: vigo.core.v1.ContentType
-	(*timestamppb.Timestamp)(nil), // 25: google.protobuf.Timestamp
+	(SyncState)(0),                    // 0: vigo.core.v1.SyncState
+	(TagOrigin)(0),                    // 1: vigo.core.v1.TagOrigin
+	(ArtworkOrigin)(0),                // 2: vigo.core.v1.ArtworkOrigin
+	(*Tag)(nil),                       // 3: vigo.core.v1.Tag
+	(*SourceRef)(nil),                 // 4: vigo.core.v1.SourceRef
+	(*LibraryArtwork)(nil),            // 5: vigo.core.v1.LibraryArtwork
+	(*ListArtworksRequest)(nil),       // 6: vigo.core.v1.ListArtworksRequest
+	(*ListArtworksResponse)(nil),      // 7: vigo.core.v1.ListArtworksResponse
+	(*GetArtworkRequest)(nil),         // 8: vigo.core.v1.GetArtworkRequest
+	(*GetArtworkResponse)(nil),        // 9: vigo.core.v1.GetArtworkResponse
+	(*TagCount)(nil),                  // 10: vigo.core.v1.TagCount
+	(*ListTagsRequest)(nil),           // 11: vigo.core.v1.ListTagsRequest
+	(*ListTagsResponse)(nil),          // 12: vigo.core.v1.ListTagsResponse
+	(*UpdateTagsRequest)(nil),         // 13: vigo.core.v1.UpdateTagsRequest
+	(*UpdateTagsResponse)(nil),        // 14: vigo.core.v1.UpdateTagsResponse
+	(*DeleteArtworkRequest)(nil),      // 15: vigo.core.v1.DeleteArtworkRequest
+	(*DeleteArtworkResponse)(nil),     // 16: vigo.core.v1.DeleteArtworkResponse
+	(*Rect)(nil),                      // 17: vigo.core.v1.Rect
+	(*CropArtworkRequest)(nil),        // 18: vigo.core.v1.CropArtworkRequest
+	(*CropArtworkResponse)(nil),       // 19: vigo.core.v1.CropArtworkResponse
+	(*Source)(nil),                    // 20: vigo.core.v1.Source
+	(*ListSourcesRequest)(nil),        // 21: vigo.core.v1.ListSourcesRequest
+	(*ListSourcesResponse)(nil),       // 22: vigo.core.v1.ListSourcesResponse
+	(*SyncSourceRequest)(nil),         // 23: vigo.core.v1.SyncSourceRequest
+	(*SyncSourceResponse)(nil),        // 24: vigo.core.v1.SyncSourceResponse
+	(*ItemResult)(nil),                // 25: vigo.core.v1.ItemResult
+	(*DeleteArtworksRequest)(nil),     // 26: vigo.core.v1.DeleteArtworksRequest
+	(*DeleteArtworksResponse)(nil),    // 27: vigo.core.v1.DeleteArtworksResponse
+	(*RefreshThumbnailsRequest)(nil),  // 28: vigo.core.v1.RefreshThumbnailsRequest
+	(*RefreshThumbnailsResponse)(nil), // 29: vigo.core.v1.RefreshThumbnailsResponse
+	(ContentType)(0),                  // 30: vigo.core.v1.ContentType
+	(*timestamppb.Timestamp)(nil),     // 31: google.protobuf.Timestamp
 }
 var file_vigo_core_v1_library_proto_depIdxs = []int32{
 	1,  // 0: vigo.core.v1.Tag.origin:type_name -> vigo.core.v1.TagOrigin
-	24, // 1: vigo.core.v1.LibraryArtwork.content_type:type_name -> vigo.core.v1.ContentType
-	3,  // 2: vigo.core.v1.LibraryArtwork.sources:type_name -> vigo.core.v1.SourceRef
-	2,  // 3: vigo.core.v1.LibraryArtwork.tags:type_name -> vigo.core.v1.Tag
+	30, // 1: vigo.core.v1.LibraryArtwork.content_type:type_name -> vigo.core.v1.ContentType
+	4,  // 2: vigo.core.v1.LibraryArtwork.sources:type_name -> vigo.core.v1.SourceRef
+	3,  // 3: vigo.core.v1.LibraryArtwork.tags:type_name -> vigo.core.v1.Tag
 	0,  // 4: vigo.core.v1.LibraryArtwork.sync_state:type_name -> vigo.core.v1.SyncState
-	25, // 5: vigo.core.v1.LibraryArtwork.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 6: vigo.core.v1.ListArtworksResponse.artworks:type_name -> vigo.core.v1.LibraryArtwork
-	4,  // 7: vigo.core.v1.GetArtworkResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
-	2,  // 8: vigo.core.v1.TagCount.tag:type_name -> vigo.core.v1.Tag
-	9,  // 9: vigo.core.v1.ListTagsResponse.tags:type_name -> vigo.core.v1.TagCount
-	4,  // 10: vigo.core.v1.UpdateTagsResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
-	4,  // 11: vigo.core.v1.DeleteArtworkResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
-	16, // 12: vigo.core.v1.CropArtworkRequest.rect:type_name -> vigo.core.v1.Rect
-	4,  // 13: vigo.core.v1.CropArtworkResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
-	25, // 14: vigo.core.v1.Source.last_synced_at:type_name -> google.protobuf.Timestamp
-	19, // 15: vigo.core.v1.ListSourcesResponse.sources:type_name -> vigo.core.v1.Source
-	5,  // 16: vigo.core.v1.LibraryService.ListArtworks:input_type -> vigo.core.v1.ListArtworksRequest
-	7,  // 17: vigo.core.v1.LibraryService.GetArtwork:input_type -> vigo.core.v1.GetArtworkRequest
-	10, // 18: vigo.core.v1.LibraryService.ListTags:input_type -> vigo.core.v1.ListTagsRequest
-	12, // 19: vigo.core.v1.LibraryService.UpdateTags:input_type -> vigo.core.v1.UpdateTagsRequest
-	14, // 20: vigo.core.v1.LibraryService.DeleteArtwork:input_type -> vigo.core.v1.DeleteArtworkRequest
-	17, // 21: vigo.core.v1.LibraryService.CropArtwork:input_type -> vigo.core.v1.CropArtworkRequest
-	20, // 22: vigo.core.v1.LibraryService.ListSources:input_type -> vigo.core.v1.ListSourcesRequest
-	22, // 23: vigo.core.v1.LibraryService.SyncSource:input_type -> vigo.core.v1.SyncSourceRequest
-	6,  // 24: vigo.core.v1.LibraryService.ListArtworks:output_type -> vigo.core.v1.ListArtworksResponse
-	8,  // 25: vigo.core.v1.LibraryService.GetArtwork:output_type -> vigo.core.v1.GetArtworkResponse
-	11, // 26: vigo.core.v1.LibraryService.ListTags:output_type -> vigo.core.v1.ListTagsResponse
-	13, // 27: vigo.core.v1.LibraryService.UpdateTags:output_type -> vigo.core.v1.UpdateTagsResponse
-	15, // 28: vigo.core.v1.LibraryService.DeleteArtwork:output_type -> vigo.core.v1.DeleteArtworkResponse
-	18, // 29: vigo.core.v1.LibraryService.CropArtwork:output_type -> vigo.core.v1.CropArtworkResponse
-	21, // 30: vigo.core.v1.LibraryService.ListSources:output_type -> vigo.core.v1.ListSourcesResponse
-	23, // 31: vigo.core.v1.LibraryService.SyncSource:output_type -> vigo.core.v1.SyncSourceResponse
-	24, // [24:32] is the sub-list for method output_type
-	16, // [16:24] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	31, // 5: vigo.core.v1.LibraryArtwork.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 6: vigo.core.v1.ListArtworksRequest.origin:type_name -> vigo.core.v1.ArtworkOrigin
+	5,  // 7: vigo.core.v1.ListArtworksResponse.artworks:type_name -> vigo.core.v1.LibraryArtwork
+	5,  // 8: vigo.core.v1.GetArtworkResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
+	3,  // 9: vigo.core.v1.TagCount.tag:type_name -> vigo.core.v1.Tag
+	10, // 10: vigo.core.v1.ListTagsResponse.tags:type_name -> vigo.core.v1.TagCount
+	5,  // 11: vigo.core.v1.UpdateTagsResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
+	5,  // 12: vigo.core.v1.DeleteArtworkResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
+	17, // 13: vigo.core.v1.CropArtworkRequest.rect:type_name -> vigo.core.v1.Rect
+	5,  // 14: vigo.core.v1.CropArtworkResponse.artwork:type_name -> vigo.core.v1.LibraryArtwork
+	31, // 15: vigo.core.v1.Source.last_synced_at:type_name -> google.protobuf.Timestamp
+	20, // 16: vigo.core.v1.ListSourcesResponse.sources:type_name -> vigo.core.v1.Source
+	25, // 17: vigo.core.v1.DeleteArtworksResponse.results:type_name -> vigo.core.v1.ItemResult
+	25, // 18: vigo.core.v1.RefreshThumbnailsResponse.results:type_name -> vigo.core.v1.ItemResult
+	6,  // 19: vigo.core.v1.LibraryService.ListArtworks:input_type -> vigo.core.v1.ListArtworksRequest
+	8,  // 20: vigo.core.v1.LibraryService.GetArtwork:input_type -> vigo.core.v1.GetArtworkRequest
+	11, // 21: vigo.core.v1.LibraryService.ListTags:input_type -> vigo.core.v1.ListTagsRequest
+	13, // 22: vigo.core.v1.LibraryService.UpdateTags:input_type -> vigo.core.v1.UpdateTagsRequest
+	15, // 23: vigo.core.v1.LibraryService.DeleteArtwork:input_type -> vigo.core.v1.DeleteArtworkRequest
+	26, // 24: vigo.core.v1.LibraryService.DeleteArtworks:input_type -> vigo.core.v1.DeleteArtworksRequest
+	28, // 25: vigo.core.v1.LibraryService.RefreshThumbnails:input_type -> vigo.core.v1.RefreshThumbnailsRequest
+	18, // 26: vigo.core.v1.LibraryService.CropArtwork:input_type -> vigo.core.v1.CropArtworkRequest
+	21, // 27: vigo.core.v1.LibraryService.ListSources:input_type -> vigo.core.v1.ListSourcesRequest
+	23, // 28: vigo.core.v1.LibraryService.SyncSource:input_type -> vigo.core.v1.SyncSourceRequest
+	7,  // 29: vigo.core.v1.LibraryService.ListArtworks:output_type -> vigo.core.v1.ListArtworksResponse
+	9,  // 30: vigo.core.v1.LibraryService.GetArtwork:output_type -> vigo.core.v1.GetArtworkResponse
+	12, // 31: vigo.core.v1.LibraryService.ListTags:output_type -> vigo.core.v1.ListTagsResponse
+	14, // 32: vigo.core.v1.LibraryService.UpdateTags:output_type -> vigo.core.v1.UpdateTagsResponse
+	16, // 33: vigo.core.v1.LibraryService.DeleteArtwork:output_type -> vigo.core.v1.DeleteArtworkResponse
+	27, // 34: vigo.core.v1.LibraryService.DeleteArtworks:output_type -> vigo.core.v1.DeleteArtworksResponse
+	29, // 35: vigo.core.v1.LibraryService.RefreshThumbnails:output_type -> vigo.core.v1.RefreshThumbnailsResponse
+	19, // 36: vigo.core.v1.LibraryService.CropArtwork:output_type -> vigo.core.v1.CropArtworkResponse
+	22, // 37: vigo.core.v1.LibraryService.ListSources:output_type -> vigo.core.v1.ListSourcesResponse
+	24, // 38: vigo.core.v1.LibraryService.SyncSource:output_type -> vigo.core.v1.SyncSourceResponse
+	29, // [29:39] is the sub-list for method output_type
+	19, // [19:29] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_vigo_core_v1_library_proto_init() }
@@ -1580,8 +1913,8 @@ func file_vigo_core_v1_library_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_vigo_core_v1_library_proto_rawDesc), len(file_vigo_core_v1_library_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   22,
+			NumEnums:      3,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -43,6 +43,8 @@ type Metrics struct {
 	SourceSyncDuration *prometheus.HistogramVec
 	SourceSyncErrors   *prometheus.CounterVec
 	AuthLogins         *prometheus.CounterVec
+	Thumbnails         *prometheus.GaugeVec
+	ThumbnailJobs      *prometheus.CounterVec
 }
 
 // New creates the collectors and registers them, plus the Go and process
@@ -113,6 +115,14 @@ func New() *Metrics {
 			Help:    "Duration of reconciliation passes per source.",
 			Buckets: []float64{.1, .5, 1, 5, 15, 30, 60, 120, 300, 900},
 		}, []string{"source"}),
+		Thumbnails: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vigo_thumbnails",
+			Help: "Gallery thumbnails by origin (source, tv) and status (ok, missing, error, pending).",
+		}, []string{"origin", "status"}),
+		ThumbnailJobs: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "vigo_thumbnail_jobs_total",
+			Help: "Thumbnail renders and downloads by origin and outcome (ok, missing, error).",
+		}, []string{"origin", "outcome"}),
 		AuthLogins: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "vigo_auth_logins_total",
 			Help: "Browser sign-in attempts by outcome: ok, wrong_password or rate_limited.",
@@ -128,7 +138,7 @@ func New() *Metrics {
 		m.PowerState, m.ArtMode, m.ConnectionState,
 		m.Requests, m.RequestDuration, m.SettingUnconfirmed, m.ProtocolErrors,
 		m.Reconnects, m.D2DBytes, m.D2DDuration, m.Leader, m.DBUp, m.IntegrationLeader,
-		m.LibraryArtworks, m.SourceSyncDuration, m.SourceSyncErrors, m.AuthLogins,
+		m.LibraryArtworks, m.SourceSyncDuration, m.SourceSyncErrors, m.AuthLogins, m.Thumbnails, m.ThumbnailJobs,
 	)
 	return m
 }

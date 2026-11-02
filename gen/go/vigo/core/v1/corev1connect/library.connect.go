@@ -47,6 +47,12 @@ const (
 	// LibraryServiceDeleteArtworkProcedure is the fully-qualified name of the LibraryService's
 	// DeleteArtwork RPC.
 	LibraryServiceDeleteArtworkProcedure = "/vigo.core.v1.LibraryService/DeleteArtwork"
+	// LibraryServiceDeleteArtworksProcedure is the fully-qualified name of the LibraryService's
+	// DeleteArtworks RPC.
+	LibraryServiceDeleteArtworksProcedure = "/vigo.core.v1.LibraryService/DeleteArtworks"
+	// LibraryServiceRefreshThumbnailsProcedure is the fully-qualified name of the LibraryService's
+	// RefreshThumbnails RPC.
+	LibraryServiceRefreshThumbnailsProcedure = "/vigo.core.v1.LibraryService/RefreshThumbnails"
 	// LibraryServiceCropArtworkProcedure is the fully-qualified name of the LibraryService's
 	// CropArtwork RPC.
 	LibraryServiceCropArtworkProcedure = "/vigo.core.v1.LibraryService/CropArtwork"
@@ -73,6 +79,16 @@ type LibraryServiceClient interface {
 	// PENDING_DELETE or DELETING until the TV confirms. TV_ONLY artworks are
 	// deleted from the TV directly, and only if they are uploads.
 	DeleteArtwork(context.Context, *connect.Request[v1.DeleteArtworkRequest]) (*connect.Response[v1.DeleteArtworkResponse], error)
+	// DeleteArtwork for several artworks. Each is handled independently; the
+	// response reports every id's outcome, so one failure does not stop the
+	// others.
+	DeleteArtworks(context.Context, *connect.Request[v1.DeleteArtworksRequest]) (*connect.Response[v1.DeleteArtworksResponse], error)
+	// Queues a new download of the TV's thumbnail for TV-only artworks and
+	// returns once queued; a LibraryChanged event follows when each new
+	// thumbnail is stored. Stored thumbnails are otherwise never re-downloaded:
+	// the TV's artwork does not change. Ids that are not TV-only fail with
+	// invalid_argument in their result.
+	RefreshThumbnails(context.Context, *connect.Request[v1.RefreshThumbnailsRequest]) (*connect.Response[v1.RefreshThumbnailsResponse], error)
 	// Crops an artwork in place in its source to the given rectangle, in
 	// pixels of the upright (EXIF-applied) original. Requires a source that
 	// supports editing. The content changes, so the response carries the new
@@ -125,6 +141,18 @@ func NewLibraryServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(libraryServiceMethods.ByName("DeleteArtwork")),
 			connect.WithClientOptions(opts...),
 		),
+		deleteArtworks: connect.NewClient[v1.DeleteArtworksRequest, v1.DeleteArtworksResponse](
+			httpClient,
+			baseURL+LibraryServiceDeleteArtworksProcedure,
+			connect.WithSchema(libraryServiceMethods.ByName("DeleteArtworks")),
+			connect.WithClientOptions(opts...),
+		),
+		refreshThumbnails: connect.NewClient[v1.RefreshThumbnailsRequest, v1.RefreshThumbnailsResponse](
+			httpClient,
+			baseURL+LibraryServiceRefreshThumbnailsProcedure,
+			connect.WithSchema(libraryServiceMethods.ByName("RefreshThumbnails")),
+			connect.WithClientOptions(opts...),
+		),
 		cropArtwork: connect.NewClient[v1.CropArtworkRequest, v1.CropArtworkResponse](
 			httpClient,
 			baseURL+LibraryServiceCropArtworkProcedure,
@@ -148,14 +176,16 @@ func NewLibraryServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // libraryServiceClient implements LibraryServiceClient.
 type libraryServiceClient struct {
-	listArtworks  *connect.Client[v1.ListArtworksRequest, v1.ListArtworksResponse]
-	getArtwork    *connect.Client[v1.GetArtworkRequest, v1.GetArtworkResponse]
-	listTags      *connect.Client[v1.ListTagsRequest, v1.ListTagsResponse]
-	updateTags    *connect.Client[v1.UpdateTagsRequest, v1.UpdateTagsResponse]
-	deleteArtwork *connect.Client[v1.DeleteArtworkRequest, v1.DeleteArtworkResponse]
-	cropArtwork   *connect.Client[v1.CropArtworkRequest, v1.CropArtworkResponse]
-	listSources   *connect.Client[v1.ListSourcesRequest, v1.ListSourcesResponse]
-	syncSource    *connect.Client[v1.SyncSourceRequest, v1.SyncSourceResponse]
+	listArtworks      *connect.Client[v1.ListArtworksRequest, v1.ListArtworksResponse]
+	getArtwork        *connect.Client[v1.GetArtworkRequest, v1.GetArtworkResponse]
+	listTags          *connect.Client[v1.ListTagsRequest, v1.ListTagsResponse]
+	updateTags        *connect.Client[v1.UpdateTagsRequest, v1.UpdateTagsResponse]
+	deleteArtwork     *connect.Client[v1.DeleteArtworkRequest, v1.DeleteArtworkResponse]
+	deleteArtworks    *connect.Client[v1.DeleteArtworksRequest, v1.DeleteArtworksResponse]
+	refreshThumbnails *connect.Client[v1.RefreshThumbnailsRequest, v1.RefreshThumbnailsResponse]
+	cropArtwork       *connect.Client[v1.CropArtworkRequest, v1.CropArtworkResponse]
+	listSources       *connect.Client[v1.ListSourcesRequest, v1.ListSourcesResponse]
+	syncSource        *connect.Client[v1.SyncSourceRequest, v1.SyncSourceResponse]
 }
 
 // ListArtworks calls vigo.core.v1.LibraryService.ListArtworks.
@@ -181,6 +211,16 @@ func (c *libraryServiceClient) UpdateTags(ctx context.Context, req *connect.Requ
 // DeleteArtwork calls vigo.core.v1.LibraryService.DeleteArtwork.
 func (c *libraryServiceClient) DeleteArtwork(ctx context.Context, req *connect.Request[v1.DeleteArtworkRequest]) (*connect.Response[v1.DeleteArtworkResponse], error) {
 	return c.deleteArtwork.CallUnary(ctx, req)
+}
+
+// DeleteArtworks calls vigo.core.v1.LibraryService.DeleteArtworks.
+func (c *libraryServiceClient) DeleteArtworks(ctx context.Context, req *connect.Request[v1.DeleteArtworksRequest]) (*connect.Response[v1.DeleteArtworksResponse], error) {
+	return c.deleteArtworks.CallUnary(ctx, req)
+}
+
+// RefreshThumbnails calls vigo.core.v1.LibraryService.RefreshThumbnails.
+func (c *libraryServiceClient) RefreshThumbnails(ctx context.Context, req *connect.Request[v1.RefreshThumbnailsRequest]) (*connect.Response[v1.RefreshThumbnailsResponse], error) {
+	return c.refreshThumbnails.CallUnary(ctx, req)
 }
 
 // CropArtwork calls vigo.core.v1.LibraryService.CropArtwork.
@@ -213,6 +253,16 @@ type LibraryServiceHandler interface {
 	// PENDING_DELETE or DELETING until the TV confirms. TV_ONLY artworks are
 	// deleted from the TV directly, and only if they are uploads.
 	DeleteArtwork(context.Context, *connect.Request[v1.DeleteArtworkRequest]) (*connect.Response[v1.DeleteArtworkResponse], error)
+	// DeleteArtwork for several artworks. Each is handled independently; the
+	// response reports every id's outcome, so one failure does not stop the
+	// others.
+	DeleteArtworks(context.Context, *connect.Request[v1.DeleteArtworksRequest]) (*connect.Response[v1.DeleteArtworksResponse], error)
+	// Queues a new download of the TV's thumbnail for TV-only artworks and
+	// returns once queued; a LibraryChanged event follows when each new
+	// thumbnail is stored. Stored thumbnails are otherwise never re-downloaded:
+	// the TV's artwork does not change. Ids that are not TV-only fail with
+	// invalid_argument in their result.
+	RefreshThumbnails(context.Context, *connect.Request[v1.RefreshThumbnailsRequest]) (*connect.Response[v1.RefreshThumbnailsResponse], error)
 	// Crops an artwork in place in its source to the given rectangle, in
 	// pixels of the upright (EXIF-applied) original. Requires a source that
 	// supports editing. The content changes, so the response carries the new
@@ -261,6 +311,18 @@ func NewLibraryServiceHandler(svc LibraryServiceHandler, opts ...connect.Handler
 		connect.WithSchema(libraryServiceMethods.ByName("DeleteArtwork")),
 		connect.WithHandlerOptions(opts...),
 	)
+	libraryServiceDeleteArtworksHandler := connect.NewUnaryHandler(
+		LibraryServiceDeleteArtworksProcedure,
+		svc.DeleteArtworks,
+		connect.WithSchema(libraryServiceMethods.ByName("DeleteArtworks")),
+		connect.WithHandlerOptions(opts...),
+	)
+	libraryServiceRefreshThumbnailsHandler := connect.NewUnaryHandler(
+		LibraryServiceRefreshThumbnailsProcedure,
+		svc.RefreshThumbnails,
+		connect.WithSchema(libraryServiceMethods.ByName("RefreshThumbnails")),
+		connect.WithHandlerOptions(opts...),
+	)
 	libraryServiceCropArtworkHandler := connect.NewUnaryHandler(
 		LibraryServiceCropArtworkProcedure,
 		svc.CropArtwork,
@@ -291,6 +353,10 @@ func NewLibraryServiceHandler(svc LibraryServiceHandler, opts ...connect.Handler
 			libraryServiceUpdateTagsHandler.ServeHTTP(w, r)
 		case LibraryServiceDeleteArtworkProcedure:
 			libraryServiceDeleteArtworkHandler.ServeHTTP(w, r)
+		case LibraryServiceDeleteArtworksProcedure:
+			libraryServiceDeleteArtworksHandler.ServeHTTP(w, r)
+		case LibraryServiceRefreshThumbnailsProcedure:
+			libraryServiceRefreshThumbnailsHandler.ServeHTTP(w, r)
 		case LibraryServiceCropArtworkProcedure:
 			libraryServiceCropArtworkHandler.ServeHTTP(w, r)
 		case LibraryServiceListSourcesProcedure:
@@ -324,6 +390,14 @@ func (UnimplementedLibraryServiceHandler) UpdateTags(context.Context, *connect.R
 
 func (UnimplementedLibraryServiceHandler) DeleteArtwork(context.Context, *connect.Request[v1.DeleteArtworkRequest]) (*connect.Response[v1.DeleteArtworkResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.core.v1.LibraryService.DeleteArtwork is not implemented"))
+}
+
+func (UnimplementedLibraryServiceHandler) DeleteArtworks(context.Context, *connect.Request[v1.DeleteArtworksRequest]) (*connect.Response[v1.DeleteArtworksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.core.v1.LibraryService.DeleteArtworks is not implemented"))
+}
+
+func (UnimplementedLibraryServiceHandler) RefreshThumbnails(context.Context, *connect.Request[v1.RefreshThumbnailsRequest]) (*connect.Response[v1.RefreshThumbnailsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("vigo.core.v1.LibraryService.RefreshThumbnails is not implemented"))
 }
 
 func (UnimplementedLibraryServiceHandler) CropArtwork(context.Context, *connect.Request[v1.CropArtworkRequest]) (*connect.Response[v1.CropArtworkResponse], error) {

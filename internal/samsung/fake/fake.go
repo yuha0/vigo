@@ -272,6 +272,13 @@ func (tv *TV) Restore(items []samsung.Content) {
 	}
 }
 
+// SetThumbnail replaces the thumbnail the TV serves for contentID.
+func (tv *TV) SetThumbnail(contentID string, data []byte) {
+	tv.mu.Lock()
+	defer tv.mu.Unlock()
+	tv.thumbs[contentID] = data
+}
+
 // RemoveSilently deletes content without emitting image_deleted, as a
 // deletion the art channel never reported would look.
 func (tv *TV) RemoveSilently(contentID string) {

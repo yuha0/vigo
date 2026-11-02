@@ -396,7 +396,7 @@ func TestVigoDeletionIsNotMirroredBack(t *testing.T) {
 	// happens when a file reappears after vigo queued its deletion. The
 	// recorded deletion keeps the TV's image_deleted from deleting the file.
 	e.lib.tvMu.Lock()
-	err := e.lib.deleteFromTV(e.ctx, a.Id, a.TvContentId)
+	err := e.lib.deleteFromTV(e.ctx, a.Id, a.TvContentId, true)
 	e.lib.tvMu.Unlock()
 	if err != nil {
 		t.Fatal(err)
@@ -684,6 +684,14 @@ func TestQueries(t *testing.T) {
 		{"art store", &corev1.ListArtworksRequest{Tags: []string{"source/art-store"}}, 8},
 		{"pending uploads have no TV tag", &corev1.ListArtworksRequest{Tags: []string{"source/art", "status/on-tv"}}, 0},
 		{"nothing", &corev1.ListArtworksRequest{Query: "zzz"}, 0},
+		{"origin sources", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_SOURCES}, 7},
+		{"origin TV only", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_TV_ONLY}, 10},
+		{"origin unspecified is both", &corev1.ListArtworksRequest{}, 17},
+		{"origin TV only with a tag", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_TV_ONLY, Tags: []string{"source/art-store"}}, 8},
+		{"origin sources with a TV-only tag", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_SOURCES, Tags: []string{"source/art-store"}}, 0},
+		{"origin sources with a query", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_SOURCES, Query: "snow"}, 1},
+		{"origin TV only with a query", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_TV_ONLY, Query: "sam-s270"}, 7},
+		{"origin TV only excludes source files", &corev1.ListArtworksRequest{Origin: corev1.ArtworkOrigin_ARTWORK_ORIGIN_TV_ONLY, Query: "snow"}, 0},
 	}
 	for _, tt := range tests {
 		if got := count(tt.req); got != tt.want {
@@ -855,5 +863,54 @@ func TestEmptyAndUndecodableFilesAreSkipped(t *testing.T) {
 	}
 	if got := e.byPath("a.jpg"); got == nil || got.Id != a.Id || !e.tv.Has(a.TvContentId) {
 		t.Errorf("a.jpg emptied mid-write was treated as changed or removed: %v", got)
+	}
+}
+
+// The library mirrors the TV before it reports itself running, so a fresh
+// database does not briefly show no TV artworks.
+func TestTVArtworksIndexedBeforeServing(t *testing.T) {
+	e := newEnv(t, "")
+	if _, err := e.lib.Get(e.ctx, "tv:SAM-S2701"); err != nil {
+		t.Fatalf("TV-only artwork missing right after start: %v", err)
+	}
+}
+
+// Readers never see an existing artwork disappear while mirror passes,
+// uploads and reconciles run concurrently.
+func TestIndexStaysConsistentDuringSync(t *testing.T) {
+	e := seeded(t)
+	before := e.artworks()
+	ctx, cancel := context.WithCancel(e.ctx)
+	var wg sync.WaitGroup
+	var failures []string
+	var mu sync.Mutex
+	wg.Go(func() {
+		for ctx.Err() == nil {
+			resp, err := e.lib.List(context.Background(), &corev1.ListArtworksRequest{IncludeDeleting: true, PageSize: 500})
+			if err != nil {
+				continue
+			}
+			seen := map[string]bool{}
+			for _, a := range resp.Artworks {
+				seen[a.Id] = true
+			}
+			for id := range before {
+				if !seen[id] {
+					mu.Lock()
+					failures = append(failures, id)
+					mu.Unlock()
+				}
+			}
+		}
+	})
+	for i := range 4 {
+		e.writeImage(fmt.Sprintf("new%d.jpg", i), 64, 36, 20+i)
+		e.pass()
+		e.lib.refreshMirror(e.ctx)
+	}
+	cancel()
+	wg.Wait()
+	if len(failures) > 0 {
+		t.Errorf("artworks vanished from the index during sync, e.g. %v (%d sightings)", failures[0], len(failures))
 	}
 }

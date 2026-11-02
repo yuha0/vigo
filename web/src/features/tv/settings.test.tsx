@@ -43,6 +43,25 @@ describe("TV settings", () => {
     expect(within(row("photo_filter_strength")).getByRole("slider")).toHaveAttribute("aria-valuenow", "3");
   });
 
+  it("puts every setting's control on the right of its row", async () => {
+    renderApp("/tv", { scenario: "art", settings: withUnknown() });
+    await screen.findByText("Brightness");
+    const controls: [string, () => HTMLElement][] = [
+      ["motion_timer", () => within(row("motion_timer")).getByRole("combobox")],
+      ["night_mode", () => within(row("night_mode")).getByRole("radio", { name: "auto" })],
+      ["brightness_sensor_setting", () => within(row("brightness_sensor_setting")).getByRole("switch")],
+      ["brightness", () => within(row("brightness")).getByText("4")],
+    ];
+    for (const [key, get] of controls) {
+      const slot = get().closest('[data-slot="setting-control"]');
+      expect(slot, key).not.toBeNull();
+      // The control slot is the trailing item of the row that starts with the label.
+      expect(slot!.parentElement!.firstElementChild!.textContent).toContain(row(key).querySelector("p")!.textContent!);
+      expect(slot!.parentElement!.lastElementChild).toBe(slot);
+      expect(slot).toHaveClass("ml-auto");
+    }
+  });
+
   it("applies a confirmed change", async () => {
     const { user, backend } = renderApp("/tv", { scenario: "art" });
     const sw = await screen.findByRole("switch", { name: "Auto brightness" });

@@ -688,60 +688,6 @@ func TestUpload(t *testing.T) {
 	}
 }
 
-func TestThumbnailCache(t *testing.T) {
-	h := connected(t)
-	h.tv.ResetCalls()
-	var wg sync.WaitGroup
-	etags := make([]string, 8)
-	for i := range etags {
-		wg.Go(func() {
-			data, etag, err := h.svc.Thumbnail(context.Background(), "SAM-S2702")
-			if err != nil || len(data) == 0 {
-				t.Errorf("thumbnail: %v", err)
-			}
-			etags[i] = etag
-		})
-	}
-	wg.Wait()
-	if _, _, err := h.svc.Thumbnail(context.Background(), "SAM-S2702"); err != nil {
-		t.Fatal(err)
-	}
-	n := 0
-	for _, c := range h.tv.Calls() {
-		if c == "thumbnail:SAM-S2702" {
-			n++
-		}
-	}
-	if n != 1 {
-		t.Errorf("fetched %d times, want 1", n)
-	}
-	for _, e := range etags {
-		if e == "" || e != etags[0] {
-			t.Errorf("etags differ: %v", etags)
-			break
-		}
-	}
-}
-
-func TestThumbnailMissIsRemembered(t *testing.T) {
-	h := connected(t)
-	h.tv.FailNext("thumbnail", samsung.ErrNoData)
-	for range 2 {
-		if _, _, err := h.svc.Thumbnail(context.Background(), "SAM-S2702"); !errors.Is(err, ErrNotFound) {
-			t.Fatalf("got %v, want ErrNotFound", err)
-		}
-	}
-	n := 0
-	for _, c := range h.tv.Calls() {
-		if c == "thumbnail:SAM-S2702" {
-			n++
-		}
-	}
-	if n != 1 {
-		t.Errorf("asked the TV %d times, want 1", n)
-	}
-}
-
 func TestThumbnailOfFreshUpload(t *testing.T) {
 	h := connected(t)
 	ctx := context.Background()
@@ -772,22 +718,6 @@ func TestThumbnailOfFreshUpload(t *testing.T) {
 	}
 	if n != 2 {
 		t.Errorf("fetched %d times, want 2", n)
-	}
-}
-
-func TestThumbnailLRU(t *testing.T) {
-	c := newThumbCache(2, 1)
-	c.put("a", []byte("a"))
-	c.put("b", []byte("b"))
-	c.get("a")
-	c.put("c", []byte("c"))
-	if _, ok := c.get("b"); ok {
-		t.Error("b should have been evicted")
-	}
-	for _, k := range []string{"a", "c"} {
-		if _, ok := c.get(k); !ok {
-			t.Errorf("%s missing", k)
-		}
 	}
 }
 
@@ -1195,4 +1125,60 @@ func TestLegacySelectionRecordIsUnconfirmed(t *testing.T) {
 	go func() { h.svc.Run(ctx); close(done) }()
 	defer func() { cancel(); <-done }()
 	h.waitFor(t, "the report replacing the unconfirmed legacy record", isSelected("SAM-S2705", false))
+}
+
+func TestThumbnailFetch(t *testing.T) {
+	h := connected(t)
+	ctx := context.Background()
+	a, etagA, err := h.svc.Thumbnail(ctx, "SAM-S2702")
+	if err != nil || len(a) == 0 {
+		t.Fatal(err)
+	}
+	b, etagB, _ := h.svc.Thumbnail(ctx, "SAM-S2702")
+	if etagA == "" || etagA != etagB || !bytes.Equal(a, b) {
+		t.Errorf("etags %q %q", etagA, etagB)
+	}
+	// The library remembers missing thumbnails; the TV is asked each time.
+	h.tv.FailNext("thumbnail", samsung.ErrNoData)
+	h.tv.ResetCalls()
+	if _, _, err := h.svc.Thumbnail(ctx, "SAM-S2703"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("no data: %v, want ErrNotFound", err)
+	}
+	if _, _, err := h.svc.Thumbnail(ctx, "SAM-S2703"); err != nil {
+		t.Fatalf("second ask: %v", err)
+	}
+}
+
+// Background fetches wait while an interactive call is in flight, so
+// prefetching never queues ahead of a user's request.
+func TestBackgroundThumbnailYieldsToInteractive(t *testing.T) {
+	h := connected(t)
+	end := h.svc.busy.begin()
+	h.tv.ResetCalls()
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := h.svc.Thumbnail(Background(context.Background()), "SAM-S2702")
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		t.Fatalf("background fetch ran during an interactive call: %v", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+	if slices.Contains(h.tv.Calls(), "thumbnail:SAM-S2702") {
+		t.Fatal("background fetch reached the TV during an interactive call")
+	}
+	end()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("background fetch never ran")
+	}
+	// An interactive fetch does not wait for background work.
+	if _, _, err := h.svc.Thumbnail(context.Background(), "SAM-S2703"); err != nil {
+		t.Fatal(err)
+	}
 }

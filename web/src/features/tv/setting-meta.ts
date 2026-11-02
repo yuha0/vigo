@@ -9,6 +9,8 @@ export type SettingMeta = {
   maxLabel?: string;
   /** Formats an enum option for display. */
   option?: (v: string) => string;
+  /** A shorter form for the closed control, when `option` is long. */
+  optionShort?: (v: string) => string;
 };
 
 function minutes(v: string): string {
@@ -46,6 +48,7 @@ const known: Record<string, SettingMeta> = {
     description:
       "The timer is what darkens the panel when the room is empty: after this long without motion, the TV goes to sleep. Off keeps art displayed all the time.",
     option: (v) => (v === "off" ? "Off · keep art on" : minutes(v)),
+    optionShort: minutes,
   },
   brightness_sensor_setting: {
     label: "Auto brightness",

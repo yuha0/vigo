@@ -89,6 +89,7 @@ func (l *Library) applyListing(ctx context.Context, arts []*corev1.Artwork) erro
 	for _, s := range sources {
 		l.kick(s)
 	}
+	signal(l.thumbKick)
 	return nil
 }
 

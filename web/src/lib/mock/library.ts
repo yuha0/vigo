@@ -4,6 +4,8 @@ import { Code, ConnectError } from "@connectrpc/connect";
 
 import { ContentType, LibraryChangedSchema } from "@/gen/vigo/core/v1/core_pb";
 import {
+  ArtworkOrigin,
+  ItemResultSchema,
   LibraryArtworkSchema,
   ListArtworksRequestSchema,
   SourceSchema,
@@ -124,9 +126,11 @@ export class MockLibrary {
         }),
       );
     }
+    // What's on the TV before vigo's own uploads; those belong to their source artworks, not to TV-only ones.
+    const tvOnly = [...tv.artworks];
     for (const seed of photoSeeds) this.artworks.push(this.fromSeed("photos", seed));
     if (opts.sources !== "single") for (const seed of familySeeds) this.artworks.push(this.fromSeed("family", seed));
-    for (const t of tv.artworks) {
+    for (const t of tvOnly) {
       const store = t.contentType === ContentType.SERVER || t.contentType === ContentType.PREINSTALL;
       this.artworks.push(
         create(LibraryArtworkSchema, {
@@ -228,6 +232,8 @@ export class MockLibrary {
     const q = req.query.trim().toLowerCase();
     const matches = this.artworks.filter((a) => {
       if (!req.includeDeleting && (a.syncState === SyncState.PENDING_DELETE || a.syncState === SyncState.DELETING)) return false;
+      if (req.origin === ArtworkOrigin.SOURCES && a.sources.length === 0) return false;
+      if (req.origin === ArtworkOrigin.TV_ONLY && a.sources.length > 0) return false;
       const names = a.tags.map((t) => t.name);
       for (const want of req.tags) {
         if (want.endsWith("/") ? !names.some((n) => n.startsWith(want)) : !names.includes(want)) return false;
@@ -300,6 +306,34 @@ export class MockLibrary {
       });
     });
     return clone(LibraryArtworkSchema, a);
+  }
+
+  private each(ids: string[], fn: (id: string) => void) {
+    return ids.map((id) => {
+      try {
+        fn(id);
+        return create(ItemResultSchema, { id });
+      } catch (err) {
+        const e = ConnectError.from(err);
+        const errorCode = Code[e.code].replace(/[A-Z]/g, (c, i: number) => (i ? "_" : "") + c.toLowerCase());
+        return create(ItemResultSchema, { id, errorCode, errorMessage: e.rawMessage });
+      }
+    });
+  }
+
+  deleteArtworks(ids: string[]) {
+    return this.each(ids, (id) => this.deleteArtwork(id));
+  }
+
+  /** Re-downloads TV-only thumbnails; the new updated_at is what changes the thumbnail URL. */
+  refreshThumbnails(ids: string[]) {
+    const results = this.each(ids, (id) => {
+      const a = this.find(id);
+      if (a.syncState !== SyncState.TV_ONLY) fail(Code.InvalidArgument, "only TV-only artworks have a TV thumbnail to refresh");
+      a.updatedAt = timestampFromMs(Math.max(Date.now(), (a.updatedAt ? Number(a.updatedAt.seconds) * 1000 : 0) + 1000));
+    });
+    this.changed(results.filter((r) => !r.errorCode).map((r) => r.id));
+    return results;
   }
 
   cropArtwork(id: string, rect: Rect | undefined) {

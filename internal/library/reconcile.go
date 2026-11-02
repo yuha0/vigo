@@ -114,6 +114,7 @@ func (l *Library) scan(ctx context.Context, src source.Source) error {
 	}
 	next := map[string]item{}
 	var unreadable []string
+	thumbs := map[string]renderedThumb{}
 	for _, e := range entries {
 		e.ModTime = mtime(e.ModTime)
 		if p, ok := prev[e.Path]; ok && p.size == e.Size && p.mtime.Equal(e.ModTime) {
@@ -137,6 +138,9 @@ func (l *Library) scan(ctx context.Context, src source.Source) error {
 		var it item
 		if err == nil {
 			it, err = probeItem(sid, e, data, hash)
+			if err == nil {
+				l.queueThumb(ctx, thumbs, hash, data)
+			}
 			if errors.Is(err, imageprep.ErrUnsupported) {
 				l.log.Info("skipping undecodable source file until a later pass", "source", sid, "path", e.Path)
 				keep()
@@ -184,6 +188,7 @@ func (l *Library) scan(ctx context.Context, src source.Source) error {
 	if err != nil {
 		return err
 	}
+	l.storeThumbs(ctx, thumbs)
 	l.changed(changed, nil)
 
 	if err := l.deleteFilesDeletedOnTV(ctx, src); err != nil {
@@ -313,15 +318,19 @@ func (l *Library) uploads(ctx context.Context, src source.Source) error {
 	return nil
 }
 
-// deletions deletes the TV copies of linked artworks whose content is in no
-// source. Only uploads vigo made are linked, so nothing else is ever
-// deleted, and each deletion is recorded before it is sent.
+// deletions deletes from the TV the copies of linked artworks whose
+// content is in no source, and the TV-only uploads recorded for deletion.
+// Only uploads are ever deleted, and each deletion is recorded before it is
+// sent. The whole batch goes in one request; if the TV refuses it, each
+// item is tried on its own so one bad item cannot block the rest.
 func (l *Library) deletions(ctx context.Context) error {
 	rows, err := l.pool.Query(ctx, `
 		SELECT a.id, a.tv_content_id, COALESCE(t.content_type, '')
 		FROM artworks a LEFT JOIN tv_items t ON t.content_id = a.tv_content_id
-		WHERE a.linked AND a.hash IS NOT NULL AND a.tv_deleted_at IS NULL
-		  AND NOT EXISTS (SELECT 1 FROM source_items s WHERE s.hash = a.hash)
+		WHERE a.tv_content_id IS NOT NULL AND (
+		      (a.linked AND a.hash IS NOT NULL AND a.tv_deleted_at IS NULL
+		       AND NOT EXISTS (SELECT 1 FROM source_items s WHERE s.hash = a.hash))
+		   OR (a.hash IS NULL AND EXISTS (SELECT 1 FROM tv_deletions d WHERE d.content_id = a.tv_content_id)))
 		ORDER BY a.updated_at, a.id`)
 	if err != nil {
 		return err
@@ -335,27 +344,68 @@ func (l *Library) deletions(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
+	var batch []victim
 	for _, v := range todo {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		if v.ctype != "" && v.ctype != "mobile" {
 			setState(ctx, l.pool, v.id, stateError, "refusing to delete "+v.cid+": it is not an upload")
 			continue
 		}
-		if err := l.deleteFromTV(ctx, v.id, v.cid); err != nil {
+		if _, err := l.pool.Exec(ctx, `INSERT INTO tv_deletions (content_id, artwork_id) VALUES ($1, $2) ON CONFLICT (content_id) DO NOTHING`, v.cid, v.id); err != nil {
+			return err
+		}
+		setState(ctx, l.pool, v.id, stateDeleting, "")
+		batch = append(batch, v)
+	}
+	if len(batch) == 0 {
+		return nil
+	}
+	ids, cids := make([]string, len(batch)), make([]string, len(batch))
+	for i, v := range batch {
+		ids[i], cids[i] = v.id, v.cid
+	}
+	l.changed(ids, nil)
+
+	deleted, err := l.o.TV.DeleteArt(ctx, cids)
+	if tvUnavailable(err) {
+		for _, v := range batch {
+			setState(ctx, l.pool, v.id, statePendingDelete, "")
+		}
+		l.changed(ids, nil)
+		return fmt.Errorf("%w: %w", errTVUnavailable, err)
+	}
+	done := map[string]bool{}
+	if err == nil {
+		for _, cid := range deleted {
+			done[cid] = true
+			l.contentDeleted(ctx, cid, "vigo")
+		}
+		l.log.Info("deleted artworks from the TV", "count", len(deleted))
+	} else {
+		l.log.Warn("batch deletion refused; deleting one at a time", "count", len(batch), "err", err)
+	}
+	for _, v := range batch {
+		if done[v.cid] {
+			continue
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if err := l.deleteFromTV(ctx, v.id, v.cid, true); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// deleteFromTV records the deletion, sends it and applies the result.
-func (l *Library) deleteFromTV(ctx context.Context, id, cid string) error {
+// deleteFromTV records the deletion, sends it and applies the result. For
+// the reconciler, failures are recorded on the artwork and retried by later
+// passes. For an immediate request, a failure withdraws the recorded
+// deletion and is returned, so nothing has changed.
+func (l *Library) deleteFromTV(ctx context.Context, id, cid string, fromReconciler bool) error {
 	if _, err := l.pool.Exec(ctx, `INSERT INTO tv_deletions (content_id, artwork_id) VALUES ($1, $2) ON CONFLICT (content_id) DO NOTHING`, cid, id); err != nil {
 		return err
 	}
-	if !isTVArtwork(id) {
+	if fromReconciler {
 		setState(ctx, l.pool, id, stateDeleting, "")
 		l.changed([]string{id}, nil)
 	}
@@ -365,14 +415,13 @@ func (l *Library) deleteFromTV(ctx context.Context, id, cid string) error {
 		l.contentDeleted(ctx, cid, "vigo")
 		l.log.Info("deleted artwork from the TV", "artwork", id, "content_id", cid)
 		return nil
-	case tvUnavailable(err):
-		if !isTVArtwork(id) {
-			setState(ctx, l.pool, id, statePendingDelete, "")
-			l.changed([]string{id}, nil)
-		}
-		return fmt.Errorf("%w: %w", errTVUnavailable, err)
-	case isTVArtwork(id):
+	case !fromReconciler:
+		l.pool.Exec(context.WithoutCancel(ctx), `DELETE FROM tv_deletions WHERE content_id = $1`, cid)
 		return err
+	case tvUnavailable(err):
+		setState(ctx, l.pool, id, statePendingDelete, "")
+		l.changed([]string{id}, nil)
+		return fmt.Errorf("%w: %w", errTVUnavailable, err)
 	default:
 		setState(ctx, l.pool, id, stateError, "delete from the TV: "+err.Error())
 		l.changed([]string{id}, nil)

@@ -149,7 +149,16 @@ func settleOne(ctx context.Context, q querier, id string) error {
 			return drop()
 		}
 		f.tvOnly = true
-		state, reason = stateTVOnly, ""
+		var recorded bool
+		if err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM tv_deletions WHERE content_id = $1)`, cid).Scan(&recorded); err != nil {
+			return err
+		}
+		switch {
+		case !recorded:
+			state, reason = stateTVOnly, ""
+		case state != stateDeleting && state != stateError:
+			state, reason = statePendingDelete, ""
+		}
 	} else {
 		rows, err := q.Query(ctx, `SELECT source_id, path, size, width, height FROM source_items WHERE hash = $1 ORDER BY source_id, path`, *a.hash)
 		if err != nil {

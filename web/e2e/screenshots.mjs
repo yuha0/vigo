@@ -1,5 +1,6 @@
 // Screenshots of a page in phone and desktop sizes, light and dark.
-// Usage: E2E_BASE_URL=http://localhost:5173 node e2e/screenshots.mjs <name> [path]
+// Usage: E2E_BASE_URL=http://localhost:5173 [SECTION="Art settings"] node e2e/screenshots.mjs <name> [path]
+// SECTION captures just the page section with that heading.
 import { mkdirSync } from "node:fs";
 
 import { chromium } from "playwright";
@@ -17,10 +18,14 @@ for (const [device, viewport] of [
   for (const scheme of ["light", "dark"]) {
     const page = await browser.newPage({ viewport, colorScheme: scheme, deviceScaleFactor: device === "phone" ? 2 : 1 });
     await page.goto(base + path);
-    await page.getByRole("list", { name: "Artworks" }).first().waitFor();
+    const section = process.env.SECTION
+      ? page.locator("section", { has: page.getByRole("heading", { name: process.env.SECTION, exact: true }) }).first()
+      : null;
+    await (section ?? page.getByRole("list", { name: "Artworks" }).first()).waitFor();
     await page.waitForTimeout(1200);
     const file = `${dir}${name}-${device}-${scheme}.png`;
-    await page.screenshot({ path: file, fullPage: device === "desktop" ? false : false });
+    if (section) await section.screenshot({ path: file });
+    else await page.screenshot({ path: file });
     if (process.env.SCROLL) {
       await page.mouse.wheel(0, Number(process.env.SCROLL));
       await page.waitForTimeout(600);

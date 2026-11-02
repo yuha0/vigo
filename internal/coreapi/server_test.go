@@ -29,6 +29,7 @@ import (
 	homev1 "github.com/yuha0/vigo/gen/go/vigo/home/v1"
 	"github.com/yuha0/vigo/gen/go/vigo/home/v1/homev1connect"
 	"github.com/yuha0/vigo/internal/db/dbtest"
+	"github.com/yuha0/vigo/internal/imageprep"
 	"github.com/yuha0/vigo/internal/library"
 	"github.com/yuha0/vigo/internal/metrics"
 	"github.com/yuha0/vigo/internal/pki"
@@ -73,6 +74,8 @@ func newService(t *testing.T, replica string, run bool) (*tv.Service, *fake.TV, 
 		WakePollInterval: 5 * time.Millisecond,
 		ReconnectMin:     5 * time.Millisecond,
 		ReconnectMax:     20 * time.Millisecond,
+		// The upload pipeline at a small size: these tests are about the API.
+		Prepare: func(r io.Reader, fit imageprep.Fit) ([]byte, error) { return imageprep.PrepareTo(r, fit, 64, 36) },
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -539,6 +542,52 @@ func TestLibraryHTTP(t *testing.T) {
 	if err != nil || len(srcs.Msg.Sources) != 1 || !srcs.Msg.Sources[0].Writable || srcs.Msg.Sources[0].Display != root {
 		t.Errorf("sources = %v, %v", srcs, err)
 	}
+	batch, err := c.DeleteArtworks(ctx, connect.NewRequest(&corev1.DeleteArtworksRequest{Ids: []string{"tv:SAM-S2701", "sha256:nope"}}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := batch.Msg.Results; len(r) != 2 || r[0].ErrorCode != "invalid_argument" || r[1].ErrorCode != "not_found" || r[1].ErrorMessage == "" {
+		t.Errorf("DeleteArtworks results = %v", r)
+	}
+	refresh, err := c.RefreshThumbnails(ctx, connect.NewRequest(&corev1.RefreshThumbnailsRequest{Ids: []string{uploaded.Id, "tv:SAM-S2702"}}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := refresh.Msg.Results; len(r) != 2 || r[0].ErrorCode != "invalid_argument" || r[1].ErrorCode != "" {
+		t.Errorf("RefreshThumbnails results = %v", r)
+	}
+	if _, err := c.DeleteArtworks(ctx, connect.NewRequest(&corev1.DeleteArtworksRequest{})); connectCode(err) != connect.CodeInvalidArgument {
+		t.Errorf("empty batch: %v", err)
+	}
+
+	// A standby with no reachable leader still serves stored thumbnails
+	// from the database, and forwards the rest.
+	standbySvc, _, _ := newService(t, "core-standby", false)
+	standby, err := New(Options{
+		TV:      standbySvc,
+		Library: lib,
+		Leader:  func(context.Context) (string, error) { return "", errors.New("no leader") },
+		PeerTLS: &tls.Config{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	standbyURL := serveH2C(t, standby.Public())
+	for path, want := range map[string]int{
+		"/library/tv:SAM-S2701/thumbnail":  200,
+		"/art/SAM-S2701/thumbnail":         200,
+		"/library/tv:NOT-STORED/thumbnail": 503,
+	} {
+		resp, err := http.Get(standbyURL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != want {
+			t.Errorf("standby GET %s: %d, want %d", path, resp.StatusCode, want)
+		}
+	}
+
 	type codeCase struct {
 		name string
 		err  error

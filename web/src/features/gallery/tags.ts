@@ -79,3 +79,13 @@ export function canCrop(a: LibraryArtwork, sources: readonly Source[]): boolean 
   const first = a.sources[0];
   return hasTag(a, ASPECT) && !!first && !!sources.find((s) => s.id === first.sourceId)?.editable && !isDeleting(a);
 }
+
+/** Art Store art can't be deleted; managed artworks and uploads made elsewhere can. */
+export function canDelete(a: LibraryArtwork): boolean {
+  return !isArtStore(a) && !isDeleting(a);
+}
+
+/** Only TV-only artworks have a TV thumbnail to download again. */
+export function canRefresh(a: LibraryArtwork): boolean {
+  return provenance(a) !== "managed" && !isDeleting(a);
+}

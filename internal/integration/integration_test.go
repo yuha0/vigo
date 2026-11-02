@@ -198,6 +198,7 @@ func TestStreamEndsWhenSessionDies(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("stream did not end")
 	}
+	env.e.WaitSessionGone(t, uint32(pid))
 	_, err := env.client(homekit).PutState(ctx, connect.NewRequest(&integrationv1.PutStateRequest{Lease: lease, Key: "k"}))
 	if code(err) != connect.CodeFailedPrecondition {
 		t.Errorf("lease after the session died: %v", err)

@@ -8,6 +8,7 @@ describe("createHttpArtApi", () => {
     const api = createHttpArtApi();
     expect(api.tvThumbnailUrl("MY_F0001")).toBe("/art/MY_F0001/thumbnail");
     expect(api.thumbnailUrl("sha256:ab")).toBe("/library/sha256%3Aab/thumbnail");
+    expect(api.thumbnailUrl("tv:SAM-F0101", "1793577956")).toBe("/library/tv%3ASAM-F0101/thumbnail?v=1793577956");
     expect(api.imageUrl("tv:SAM-F0101")).toBe("/library/tv%3ASAM-F0101/image");
   });
 

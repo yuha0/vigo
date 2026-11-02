@@ -17,33 +17,6 @@ const (
 	previewQuality = 85
 )
 
-// Thumbnail returns a JPEG thumbnail and its ETag. Source content is scaled
-// from the file and cached; TV-only artworks, and linked ones no source can
-// supply, use the TV's thumbnail.
-func (l *Library) Thumbnail(ctx context.Context, id string) ([]byte, string, error) {
-	if err := l.requireRunning(); err != nil {
-		return nil, "", err
-	}
-	a, err := l.Get(ctx, id)
-	if err != nil {
-		return nil, "", err
-	}
-	if hash, ok := hashOf(id); ok && len(a.Sources) > 0 {
-		data, err := l.rendition(ctx, hash, a.Sources[0].SourceId, a.Sources[0].Path, "thumb", thumbSize, thumbQuality)
-		if err == nil {
-			return data, `"` + hash[:16] + `-t"`, nil
-		}
-		if a.TvContentId == "" {
-			return nil, "", err
-		}
-		l.log.Warn("thumbnail from the source failed; using the TV's", "artwork", id, "err", err)
-	}
-	if a.TvContentId == "" {
-		return nil, "", errs.New(ErrNotFound, "no thumbnail for %s", id)
-	}
-	return l.o.TV.Thumbnail(ctx, a.TvContentId)
-}
-
 // Preview returns an upright JPEG of a source artwork with its long side at
 // most 2048 pixels, for the crop editor.
 func (l *Library) Preview(ctx context.Context, id string) ([]byte, string, error) {

@@ -134,6 +134,12 @@ func (l *Library) List(ctx context.Context, req *corev1.ListArtworksRequest) (*c
 	if !req.IncludeDeleting {
 		where = append(where, fmt.Sprintf("a.sync_state NOT IN (%s, %s)", arg(statePendingDelete), arg(stateDeleting)))
 	}
+	switch req.Origin {
+	case corev1.ArtworkOrigin_ARTWORK_ORIGIN_SOURCES:
+		where = append(where, "a.hash IS NOT NULL")
+	case corev1.ArtworkOrigin_ARTWORK_ORIGIN_TV_ONLY:
+		where = append(where, "a.hash IS NULL")
+	}
 	for _, tag := range req.Tags {
 		if tag == "" {
 			continue
@@ -295,6 +301,46 @@ func (l *Library) Delete(ctx context.Context, id string) (*corev1.LibraryArtwork
 	if err := l.requireRunning(); err != nil {
 		return nil, err
 	}
+	a, err := l.deleteOne(ctx, id, false)
+	if err != nil {
+		return nil, err
+	}
+	l.changed([]string{id}, nil)
+	signal(l.deleteKick)
+	return a, nil
+}
+
+// DeleteMany deletes several artworks, each as Delete would, except that
+// TV-only uploads are recorded for the reconciler instead of being sent one
+// by one: the TV side of the whole batch then happens in one pass and one
+// request. errs[i] is the outcome for ids[i].
+func (l *Library) DeleteMany(ctx context.Context, ids []string) ([]error, error) {
+	if err := checkBatch(ids); err != nil {
+		return nil, err
+	}
+	if err := l.requireRunning(); err != nil {
+		return nil, err
+	}
+	out := make([]error, len(ids))
+	var affected []string
+	for i, id := range ids {
+		if _, err := l.deleteOne(ctx, id, true); err != nil {
+			out[i] = err
+			continue
+		}
+		affected = append(affected, id)
+	}
+	if len(affected) > 0 {
+		l.changed(affected, nil)
+		signal(l.deleteKick)
+	}
+	return out, nil
+}
+
+// deleteOne removes an artwork's files and settles it; it neither announces
+// the change nor wakes the reconciler. With deferTV a TV-only upload is
+// recorded for deletion by the reconciler; otherwise it is deleted now.
+func (l *Library) deleteOne(ctx context.Context, id string, deferTV bool) (*corev1.LibraryArtwork, error) {
 	a, err := l.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -303,8 +349,17 @@ func (l *Library) Delete(ctx context.Context, id string) (*corev1.LibraryArtwork
 		if a.ContentType != corev1.ContentType_CONTENT_TYPE_MOBILE {
 			return nil, errs.New(ErrInvalid, "only uploads can be deleted from the TV")
 		}
+		if deferTV {
+			if _, err := l.pool.Exec(ctx, `INSERT INTO tv_deletions (content_id, artwork_id) VALUES ($1, $2) ON CONFLICT (content_id) DO NOTHING`, a.TvContentId, id); err != nil {
+				return nil, err
+			}
+			if err := settle(ctx, l.pool, []string{id}); err != nil {
+				return nil, err
+			}
+			return l.Get(ctx, id)
+		}
 		l.tvMu.Lock()
-		err := l.deleteFromTV(ctx, id, a.TvContentId)
+		err := l.deleteFromTV(ctx, id, a.TvContentId, false)
 		l.tvMu.Unlock()
 		if err != nil {
 			return nil, err
@@ -342,10 +397,6 @@ func (l *Library) Delete(ctx context.Context, id string) (*corev1.LibraryArtwork
 	}
 	if err := settle(ctx, l.pool, []string{id}); err != nil {
 		return nil, err
-	}
-	l.changed([]string{id}, nil)
-	for _, r := range a.Sources {
-		l.kick(r.SourceId)
 	}
 	if after, err := l.Get(ctx, id); err == nil {
 		return after, nil
@@ -443,7 +494,13 @@ func (l *Library) index(ctx context.Context, sid string, e source.Entry, data []
 		affected = append(affected, artworkID(hash))
 		return settle(ctx, tx, affected)
 	})
-	return artworkID(hash), err
+	if err != nil {
+		return "", err
+	}
+	thumbs := map[string]renderedThumb{}
+	l.queueThumb(ctx, thumbs, hash, data)
+	l.storeThumbs(ctx, thumbs)
+	return artworkID(hash), nil
 }
 
 // AddFile writes a browser upload into a source and queues its upload to

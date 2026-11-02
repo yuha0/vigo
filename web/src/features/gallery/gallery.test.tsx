@@ -2,7 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { SyncState } from "@/gen/vigo/core/v1/library_pb";
+import { ArtworkOrigin, SyncState } from "@/gen/vigo/core/v1/library_pb";
 import { renderApp } from "@/test/render";
 
 function tile(name: string) {
@@ -21,7 +21,8 @@ async function openDetails(user: ReturnType<typeof renderApp>["user"], name: str
   return screen.findByRole("dialog", { name: name });
 }
 
-const lastRequest = (b: ReturnType<typeof renderApp>["backend"]) => b.library.requests.at(-1)!;
+// Grid requests only; the tab counts make their own one-item requests.
+const lastRequest = (b: ReturnType<typeof renderApp>["backend"]) => b.library.requests.filter((r) => r.pageSize !== 1).at(-1)!;
 
 describe("Gallery grid", () => {
   it("lists the library with pagination", async () => {
@@ -122,6 +123,67 @@ describe("Provenance", () => {
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "MY_F0001");
     await waitFor(() => expect(screen.getAllByRole("button", { name: /^Details for/ })).toHaveLength(1));
     expect(await openDetails(user, "MY_F0001")).toHaveTextContent("Uploaded to the TV elsewhere, not managed by vigo");
+  });
+});
+
+describe("Art Store / Local tabs", () => {
+  const tabs = () => screen.getByRole("group", { name: "Show" });
+  const tab = (name: RegExp) => within(tabs()).getByRole("button", { name });
+  const provenances = () => [...document.querySelectorAll("li[data-provenance]")].map((li) => li.getAttribute("data-provenance"));
+
+  it("shows both by default, with counts and the two sections", async () => {
+    localStorage.clear();
+    const { backend } = await gallery("/gallery");
+    expect(tab(/^Art Store/)).toHaveAttribute("aria-pressed", "true");
+    expect(tab(/^Local/)).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(tab(/^Art Store/)).toHaveAccessibleName("Art Store, 136"));
+    expect(tab(/^Local/)).toHaveAccessibleName("Local, 15");
+    expect(lastRequest(backend).origin).toBe(ArtworkOrigin.UNSPECIFIED);
+    expect(within(screen.getByRole("list", { name: "Artworks" })).getAllByRole("heading", { level: 2 })).toHaveLength(2);
+  });
+
+  it("shows only local art, without section headers", async () => {
+    localStorage.clear();
+    const { user, backend } = await gallery("/gallery");
+    await user.click(tab(/^Art Store/));
+    expect(tab(/^Art Store/)).toHaveAttribute("aria-pressed", "false");
+    await waitFor(() => expect(lastRequest(backend).origin).toBe(ArtworkOrigin.SOURCES));
+    await waitFor(() => expect(provenances()).toHaveLength(15));
+    expect(new Set(provenances())).toEqual(new Set(["managed"]));
+    expect(within(screen.getByRole("list", { name: "Artworks" })).queryAllByRole("heading")).toHaveLength(0);
+    expect(screen.getByText(/^15 artworks\./)).toBeInTheDocument();
+  });
+
+  it("shows only Art Store and other TV-only art", async () => {
+    localStorage.clear();
+    const { user, backend } = await gallery("/gallery");
+    await user.click(tab(/^Local/));
+    await waitFor(() => expect(lastRequest(backend).origin).toBe(ArtworkOrigin.TV_ONLY));
+    await waitFor(() => expect(provenances()).toHaveLength(60));
+    expect(provenances().every((p) => p !== "managed")).toBe(true);
+    expect(screen.getByText(/^136 artworks\./)).toBeInTheDocument();
+  });
+
+  it("never turns both off", async () => {
+    localStorage.clear();
+    const { user } = await gallery("/gallery");
+    await user.click(tab(/^Local/));
+    await user.click(tab(/^Art Store/));
+    expect(tab(/^Art Store/)).toHaveAttribute("aria-pressed", "true");
+    expect(tab(/^Local/)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("remembers the choice on this device", async () => {
+    localStorage.clear();
+    const first = await gallery("/gallery");
+    await first.user.click(tab(/^Art Store/));
+    expect(JSON.parse(localStorage.getItem("vigo.gallery.scope")!)).toEqual({ store: false, local: true });
+    first.unmount();
+
+    await gallery("/gallery");
+    expect(tab(/^Art Store/)).toHaveAttribute("aria-pressed", "false");
+    expect(tab(/^Local/)).toHaveAttribute("aria-pressed", "true");
+    localStorage.clear();
   });
 });
 
