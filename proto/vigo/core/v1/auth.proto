@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package vigo.core.v1;
+
+option go_package = "github.com/yuha0/vigo/gen/go/vigo/core/v1;corev1";
+
+// AuthService protects the browser listener with a single password. Sessions
+// are carried by an HttpOnly cookie that these RPCs set and clear; clients
+// never see the session token. Every other RPC and HTTP endpoint on the
+// browser listener answers unauthenticated (401) without a valid session.
+service AuthService {
+  // Callable without a session.
+  rpc GetAuthState(GetAuthStateRequest) returns (GetAuthStateResponse);
+
+  // Sets the first password and starts a session. Callable without a session,
+  // and only while no password is set; afterwards it fails with
+  // failed_precondition.
+  rpc SetupPassword(SetupPasswordRequest) returns (SetupPasswordResponse);
+
+  // Starts a session. Callable without a session. Wrong passwords and rate
+  // limiting both fail with unauthenticated or resource_exhausted, without
+  // saying which part was wrong.
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Ends the current session.
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  // Requires the current password. Ends every other session.
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+}
+
+message GetAuthStateRequest {}
+
+message GetAuthStateResponse {
+  // False until SetupPassword succeeds.
+  bool password_set = 1;
+  bool authenticated = 2;
+  // Minimum password length the server enforces.
+  int32 min_password_length = 3;
+}
+
+message SetupPasswordRequest {
+  string password = 1;
+}
+
+message SetupPasswordResponse {}
+
+message LoginRequest {
+  string password = 1;
+}
+
+message LoginResponse {}
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message ChangePasswordRequest {
+  string current_password = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordResponse {}

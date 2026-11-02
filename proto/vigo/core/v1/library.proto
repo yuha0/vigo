@@ -1,0 +1,209 @@
+syntax = "proto3";
+
+package vigo.core.v1;
+
+import "google/protobuf/timestamp.proto";
+import "vigo/core/v1/core.proto";
+
+option go_package = "github.com/yuha0/vigo/gen/go/vigo/core/v1;corev1";
+
+// LibraryService is vigo's index of artworks: everything on the TV plus
+// everything in configured sources, with tags and sync state.
+//
+// HTTP endpoints on the same server:
+//   GET  /library/{artwork_id}/thumbnail   image/jpeg, from the source file or the TV
+//   GET  /library/{artwork_id}/image       image/jpeg preview for the crop editor,
+//                                          long side at most 2048; LibraryArtwork.width/height
+//                                          are the original dimensions
+//   POST /sources/{source_id}/files        multipart "file" (and optional "path", a
+//                                          directory relative to the source root); writes
+//                                          the file into the source and starts its upload
+//                                          to the TV; responds 201 with LibraryArtwork as protojson
+service LibraryService {
+  rpc ListArtworks(ListArtworksRequest) returns (ListArtworksResponse);
+
+  rpc GetArtwork(GetArtworkRequest) returns (GetArtworkResponse);
+
+  // Tags with the number of artworks carrying each, for filter bars and
+  // grouping.
+  rpc ListTags(ListTagsRequest) returns (ListTagsResponse);
+
+  // Adds and removes user tags. System tags (origin SYSTEM) cannot be changed
+  // here; attempting it is invalid_argument.
+  rpc UpdateTags(UpdateTagsRequest) returns (UpdateTagsResponse);
+
+  // Deletes an artwork everywhere it is synced: from its source and, through
+  // the reconciler, from the TV. The artwork stays listed with sync state
+  // PENDING_DELETE or DELETING until the TV confirms. TV_ONLY artworks are
+  // deleted from the TV directly, and only if they are uploads.
+  rpc DeleteArtwork(DeleteArtworkRequest) returns (DeleteArtworkResponse);
+
+  // Crops an artwork in place in its source to the given rectangle, in
+  // pixels of the upright (EXIF-applied) original. Requires a source that
+  // supports editing. The content changes, so the response carries the new
+  // artwork id; the reconciler replaces the TV copy.
+  rpc CropArtwork(CropArtworkRequest) returns (CropArtworkResponse);
+
+  rpc ListSources(ListSourcesRequest) returns (ListSourcesResponse);
+
+  // Starts a reconciliation of one source now instead of at the next
+  // interval. Returns once it has been queued.
+  rpc SyncSource(SyncSourceRequest) returns (SyncSourceResponse);
+}
+
+enum SyncState {
+  SYNC_STATE_UNSPECIFIED = 0;
+  // On the TV and matching its source.
+  SYNC_STATE_IN_SYNC = 1;
+  SYNC_STATE_PENDING_UPLOAD = 2;
+  SYNC_STATE_UPLOADING = 3;
+  // Removed from the source or deleted in vigo; the TV copy is still there.
+  SYNC_STATE_PENDING_DELETE = 4;
+  SYNC_STATE_DELETING = 5;
+  SYNC_STATE_ERROR = 6;
+  // On the TV only, not managed by any source (Art Store, outside uploads).
+  SYNC_STATE_TV_ONLY = 7;
+}
+
+enum TagOrigin {
+  TAG_ORIGIN_UNSPECIFIED = 0;
+  // Maintained by vigo, e.g. source/art-store, folder/2024, issue/aspect-ratio.
+  TAG_ORIGIN_SYSTEM = 1;
+  TAG_ORIGIN_USER = 2;
+}
+
+message Tag {
+  // "namespace/value" for system tags; user tags have no namespace.
+  string name = 1;
+  TagOrigin origin = 2;
+}
+
+message SourceRef {
+  string source_id = 1;
+  // Path relative to the source root, "/"-separated.
+  string path = 2;
+}
+
+message LibraryArtwork {
+  // Deterministic: "sha256:<hex>" for source content, "tv:<content_id>" for
+  // TV-only artworks.
+  string id = 1;
+  // Empty when not on the TV.
+  string tv_content_id = 2;
+  ContentType content_type = 3;
+  // Upright pixel dimensions of the original.
+  int32 width = 4;
+  int32 height = 5;
+  int64 size_bytes = 6;
+  // Empty for TV-only artworks. Identical content in several places has
+  // several refs.
+  repeated SourceRef sources = 7;
+  repeated Tag tags = 8;
+  SyncState sync_state = 9;
+  // Set when sync_state is ERROR.
+  string sync_error = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message ListArtworksRequest {
+  // Artworks carrying all of these tags. A value ending in "/" matches any
+  // tag with that prefix, e.g. "folder/".
+  repeated string tags = 1;
+  // Case-insensitive substring match on file names, tags and the TV content id.
+  string query = 2;
+  // Include artworks in PENDING_DELETE and DELETING. Defaults to true in
+  // clients that show them greyed out.
+  bool include_deleting = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListArtworksResponse {
+  repeated LibraryArtwork artworks = 1;
+  string next_page_token = 2;
+  int32 total = 3;
+}
+
+message GetArtworkRequest {
+  string id = 1;
+}
+
+message GetArtworkResponse {
+  LibraryArtwork artwork = 1;
+}
+
+message TagCount {
+  Tag tag = 1;
+  int32 count = 2;
+}
+
+message ListTagsRequest {
+  // Only tags starting with this, e.g. "folder/".
+  string prefix = 1;
+}
+
+message ListTagsResponse {
+  repeated TagCount tags = 1;
+}
+
+message UpdateTagsRequest {
+  string artwork_id = 1;
+  repeated string add = 2;
+  repeated string remove = 3;
+}
+
+message UpdateTagsResponse {
+  LibraryArtwork artwork = 1;
+}
+
+message DeleteArtworkRequest {
+  string id = 1;
+}
+
+message DeleteArtworkResponse {
+  LibraryArtwork artwork = 1;
+}
+
+message Rect {
+  int32 x = 1;
+  int32 y = 2;
+  int32 width = 3;
+  int32 height = 4;
+}
+
+message CropArtworkRequest {
+  string id = 1;
+  Rect rect = 2;
+}
+
+message CropArtworkResponse {
+  LibraryArtwork artwork = 1;
+}
+
+message Source {
+  string id = 1;
+  // "file".
+  string kind = 2;
+  // Shown to people; for file sources the root path. Never contains secrets.
+  string display = 3;
+  bool writable = 4;
+  bool editable = 5;
+  int32 artwork_count = 6;
+  bool syncing = 7;
+  google.protobuf.Timestamp last_synced_at = 8;
+  string last_error = 9;
+  reserved 10;
+  reserved "halted_reason";
+}
+
+message ListSourcesRequest {}
+
+message ListSourcesResponse {
+  repeated Source sources = 1;
+}
+
+message SyncSourceRequest {
+  string source_id = 1;
+}
+
+message SyncSourceResponse {}

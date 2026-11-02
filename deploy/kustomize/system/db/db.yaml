@@ -1,0 +1,34 @@
+# CloudNativePG generates db-app (the vigo role; key uri is the connection URI vigo-core reads)
+# and db-ca (the CA its server certificates chain to; vigo-core verifies against it).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: db
+spec:
+  description: "database for vigo"
+  inheritedMetadata:
+    labels:
+      app.kubernetes.io/name: vigo-db
+      app.kubernetes.io/component: database
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie
+  instances: 3
+  primaryUpdateStrategy: unsupervised
+  bootstrap:
+    initdb:
+      database: vigo
+      owner: vigo
+      # PG18 enables page checksums by default; set explicitly so a future
+      # recreate can't silently lose them. Only applies at initdb time.
+      dataChecksums: true
+  # No storageClass: the cluster default is used. Postgres needs ReadWriteOnce block or
+  # filesystem storage; set storageClass here to pick another class.
+  storage:
+    size: 5Gi
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: preferred
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: 128m

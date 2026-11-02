@@ -1,0 +1,25 @@
+# The art library. ReadWriteMany, because every vigo-core replica mounts it read-write (any of
+# them can become leader; only the leader writes). No storageClassName: the cluster default is
+# used, so set one that provides ReadWriteMany (NFS, CephFS, SMB, ...).
+#
+# If the class is backed by a CIFS/SMB share, patch the PersistentVolume once the claim is bound:
+#
+#   1. Mount as vigo-core's user. A share typically mounts as uid 0 with mode 0755, which the
+#      non-root vigo-core (65532) cannot write:
+#        kubectl patch pv <pv> --type merge -p \
+#          '{"spec":{"mountOptions":["uid=65532","gid=65532","file_mode=0640","dir_mode=0750"]}}'
+#      (or use a StorageClass that sets these mountOptions).
+#   2. Keep the data if the claim is ever deleted:
+#        kubectl patch pv <pv> --type merge -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+#
+# Mount option changes apply when the volume is next mounted, so restart vigo-core after step 1.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: art
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi

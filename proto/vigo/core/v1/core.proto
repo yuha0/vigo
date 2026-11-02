@@ -1,0 +1,403 @@
+syntax = "proto3";
+
+package vigo.core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/yuha0/vigo/gen/go/vigo/core/v1;corev1";
+
+// TVService is the live state of the TV and the operations that change it.
+service TVService {
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+
+  // The first message is always a full Status snapshot. Clients reconnect on
+  // stream end and treat the first message after reconnecting as authoritative.
+  rpc WatchEvents(WatchEventsRequest) returns (stream WatchEventsResponse);
+
+  // Re-reads power, art mode and the selected artwork from the TV instead of
+  // waiting for the next poll or event. Clients call it when a person starts
+  // looking, e.g. on load or when the page becomes visible. Concurrent and
+  // rapid calls are coalesced; changes are also broadcast on WatchEvents.
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
+
+  // Puts art on the panel using the state-dependent wake algorithm: select_image
+  // from motion-sleep, KEY_POWER only from power-off standby, then
+  // set_artmode_status on. Fails with failed_precondition when the TV is
+  // unreachable or not paired.
+  rpc ShowArt(ShowArtRequest) returns (ShowArtResponse);
+
+  rpc SetArtMode(SetArtModeRequest) returns (SetArtModeResponse);
+
+  // Art-mode settings as reported by get_artmode_settings, with ranges and
+  // valid values.
+  rpc ListSettings(ListSettingsRequest) returns (ListSettingsResponse);
+
+  // Sends set_<key>, then re-reads the settings to confirm the value took.
+  rpc UpdateSetting(UpdateSettingRequest) returns (UpdateSettingResponse);
+
+  // Sends a key on the remote channel. KEY_POWER is rejected with
+  // invalid_argument; use ShowArt.
+  rpc SendKey(SendKeyRequest) returns (SendKeyResponse);
+}
+
+// ArtService manages the TV's artwork library.
+//
+// Two operations are plain HTTP on the same server instead of RPCs:
+//   GET  /art/{content_id}/thumbnail   image/jpeg
+//   POST /art                          multipart upload, responds with Artwork as protojson
+service ArtService {
+  rpc ListArt(ListArtRequest) returns (ListArtResponse);
+
+  // Selects artwork. Also wakes the panel from motion-sleep.
+  rpc SelectArt(SelectArtRequest) returns (SelectArtResponse);
+
+  // Only content_type MOBILE (uploads) may be deleted; anything else is
+  // rejected with invalid_argument.
+  rpc DeleteArt(DeleteArtRequest) returns (DeleteArtResponse);
+
+  rpc ListMattes(ListMattesRequest) returns (ListMattesResponse);
+
+  // Changes the matte of an artwork. The TV may refuse with error -7 on this
+  // model; that surfaces as failed_precondition.
+  rpc ChangeMatte(ChangeMatteRequest) returns (ChangeMatteResponse);
+}
+
+// PairingService runs the one-time, human-in-the-loop TV pairing.
+service PairingService {
+  rpc GetPairing(GetPairingRequest) returns (GetPairingResponse);
+
+  // Starts pairing and returns immediately in PAIRING_STATE_WAITING_FOR_ALLOW.
+  // Progress arrives on TVService.WatchEvents. Replaces the stored token on
+  // success only.
+  rpc StartPairing(StartPairingRequest) returns (StartPairingResponse);
+
+  rpc CancelPairing(CancelPairingRequest) returns (CancelPairingResponse);
+}
+
+// ConfigService holds runtime configuration that overrides flags and
+// environment.
+service ConfigService {
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+
+  // Applying a changed host or port reconnects to the TV.
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
+}
+
+enum PowerState {
+  POWER_STATE_UNSPECIFIED = 0;
+  POWER_STATE_ON = 1;
+  POWER_STATE_STANDBY = 2;
+  // REST did not answer.
+  POWER_STATE_UNREACHABLE = 3;
+}
+
+enum ArtModeState {
+  ART_MODE_STATE_UNSPECIFIED = 0;
+  ART_MODE_STATE_ON = 1;
+  ART_MODE_STATE_OFF = 2;
+}
+
+enum ConnectionState {
+  CONNECTION_STATE_UNSPECIFIED = 0;
+  CONNECTION_STATE_DISCONNECTED = 1;
+  CONNECTION_STATE_CONNECTING = 2;
+  CONNECTION_STATE_CONNECTED = 3;
+  // No token stored, or the TV rejected it. Needs pairing.
+  CONNECTION_STATE_NOT_PAIRED = 4;
+  // Connected, but the art app has not registered as host since boot, so art
+  // requests would be silently dropped.
+  CONNECTION_STATE_NO_ART_HOST = 5;
+  // This replica is not the leader and holds no TV connection.
+  CONNECTION_STATE_STANDBY_REPLICA = 6;
+}
+
+message Status {
+  PowerState power = 1;
+  ArtModeState art_mode = 2;
+  ConnectionState connection = 3;
+  // power == ON && art_mode == ON. Says nothing about whether the panel is lit.
+  bool showing_art = 4;
+  // What the TV has selected. The panel converges to it with a lag of minutes.
+  SelectedArt selected_art = 5;
+  Device device = 6;
+  repeated Warning warnings = 7;
+  bool leader = 8;
+  string replica = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message SelectedArt {
+  string content_id = 1;
+  string matte_id = 2;
+  string portrait_matte_id = 3;
+}
+
+message Device {
+  // REST "model", e.g. 24_PTM_FTV_T09. The suffix encodes the Tizen generation.
+  string model = 1;
+  // REST "modelName", e.g. QN75LS03DAFXZA.
+  string model_name = 2;
+  string name = 3;
+  string network_type = 4;
+  // Whole-device flash in GB from get_device_info. Not an art quota.
+  int32 flash_size_gb = 5;
+  bool supports_motion_sensor = 6;
+  bool supports_brightness_sensor = 7;
+}
+
+message Warning {
+  // Stable machine-readable code, e.g. "model_changed", "token_rejected".
+  string code = 1;
+  string message = 2;
+  google.protobuf.Timestamp since = 3;
+}
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  Status status = 1;
+}
+
+message RefreshRequest {}
+
+message RefreshResponse {
+  Status status = 1;
+}
+
+message WatchEventsRequest {}
+
+message WatchEventsResponse {
+  google.protobuf.Timestamp time = 1;
+  oneof event {
+    Status status = 2;
+    Artwork art_added = 3;
+    ArtDeleted art_deleted = 4;
+    SelectedArt art_selected = 5;
+    Setting setting_changed = 6;
+    Pairing pairing = 7;
+    LibraryChanged library_changed = 8;
+  }
+}
+
+// Artworks or sources in LibraryService changed; clients refetch what they
+// show.
+message LibraryChanged {
+  repeated string artwork_ids = 1;
+  repeated string source_ids = 2;
+}
+
+message ArtDeleted {
+  repeated string content_ids = 1;
+}
+
+message ShowArtRequest {
+  // Artwork to select. Empty means the currently selected artwork.
+  string content_id = 1;
+}
+
+message ShowArtResponse {
+  Status status = 1;
+}
+
+message SetArtModeRequest {
+  bool on = 1;
+}
+
+message SetArtModeResponse {
+  Status status = 1;
+}
+
+message Setting {
+  // The TV's item name, e.g. "brightness", "motion_timer".
+  string key = 1;
+  oneof kind {
+    RangeSetting range = 2;
+    EnumSetting enum = 3;
+    ToggleSetting toggle = 4;
+  }
+}
+
+message RangeSetting {
+  int32 value = 1;
+  int32 min = 2;
+  int32 max = 3;
+}
+
+message EnumSetting {
+  string value = 1;
+  // In the TV's order.
+  repeated string options = 2;
+}
+
+message ToggleSetting {
+  bool value = 1;
+}
+
+message ListSettingsRequest {}
+
+message ListSettingsResponse {
+  repeated Setting settings = 1;
+}
+
+message UpdateSettingRequest {
+  string key = 1;
+  oneof value {
+    int32 int_value = 2;
+    string enum_value = 3;
+    bool bool_value = 4;
+  }
+}
+
+message UpdateSettingResponse {
+  // As re-read from the TV after the write.
+  Setting setting = 1;
+  // False when the TV acknowledged but the re-read value differs.
+  bool confirmed = 2;
+}
+
+enum KeyAction {
+  KEY_ACTION_UNSPECIFIED = 0;
+  KEY_ACTION_CLICK = 1;
+  KEY_ACTION_PRESS = 2;
+  KEY_ACTION_RELEASE = 3;
+}
+
+message SendKeyRequest {
+  // Samsung key code, e.g. "KEY_UP".
+  string key = 1;
+  // Defaults to CLICK.
+  KeyAction action = 2;
+}
+
+message SendKeyResponse {}
+
+enum ContentType {
+  CONTENT_TYPE_UNSPECIFIED = 0;
+  // Uploaded by a client; content_id MY_F*.
+  CONTENT_TYPE_MOBILE = 1;
+  CONTENT_TYPE_PREINSTALL = 2;
+  // Art Store.
+  CONTENT_TYPE_SERVER = 3;
+}
+
+message Artwork {
+  string content_id = 1;
+  ContentType content_type = 2;
+  // All categories the item was listed under, de-duplicated.
+  repeated string category_ids = 3;
+  string matte_id = 4;
+  string portrait_matte_id = 5;
+  // As reported by the TV; observed swapped for uploads, so not an orientation signal.
+  int32 width = 6;
+  int32 height = 7;
+  // Set only for uploads.
+  google.protobuf.Timestamp image_date = 8;
+  bool slideshow = 9;
+  // Bytes vigo uploaded, from its own tally; zero if not uploaded by vigo.
+  int64 uploaded_bytes = 10;
+}
+
+message ListArtRequest {
+  // Restrict to one category. Empty lists everything, de-duplicated by content_id.
+  string category_id = 1;
+}
+
+message ListArtResponse {
+  repeated Artwork artworks = 1;
+  repeated string category_ids = 2;
+}
+
+message SelectArtRequest {
+  string content_id = 1;
+}
+
+message SelectArtResponse {
+  Status status = 1;
+}
+
+message DeleteArtRequest {
+  repeated string content_ids = 1;
+}
+
+message DeleteArtResponse {
+  repeated string deleted_content_ids = 1;
+}
+
+message ListMattesRequest {}
+
+message MatteColor {
+  string name = 1;
+  // "#rrggbb".
+  string hex = 2;
+}
+
+message ListMattesResponse {
+  repeated string matte_types = 1;
+  repeated MatteColor colors = 2;
+}
+
+message ChangeMatteRequest {
+  string content_id = 1;
+  // "none" or "<type>_<color>", e.g. "shadowbox_polar".
+  string matte_id = 2;
+  string portrait_matte_id = 3;
+}
+
+message ChangeMatteResponse {
+  Artwork artwork = 1;
+}
+
+enum PairingState {
+  PAIRING_STATE_UNSPECIFIED = 0;
+  PAIRING_STATE_UNPAIRED = 1;
+  PAIRING_STATE_WAITING_FOR_ALLOW = 2;
+  PAIRING_STATE_PAIRED = 3;
+  PAIRING_STATE_FAILED = 4;
+}
+
+message Pairing {
+  PairingState state = 1;
+  string message = 2;
+  // When WAITING_FOR_ALLOW, the attempt gives up at this time.
+  google.protobuf.Timestamp deadline = 3;
+}
+
+message GetPairingRequest {}
+
+message GetPairingResponse {
+  Pairing pairing = 1;
+}
+
+message StartPairingRequest {}
+
+message StartPairingResponse {
+  Pairing pairing = 1;
+}
+
+message CancelPairingRequest {}
+
+message CancelPairingResponse {
+  Pairing pairing = 1;
+}
+
+message Config {
+  string tv_host = 1;
+  // 8002 (TLS) or 8001 (plaintext).
+  int32 tv_port = 2;
+  // Shown on the TV and in its Device Connection Manager. Changing it requires re-pairing.
+  string client_name = 3;
+}
+
+message GetConfigRequest {}
+
+message GetConfigResponse {
+  Config config = 1;
+}
+
+message UpdateConfigRequest {
+  Config config = 1;
+}
+
+message UpdateConfigResponse {
+  Config config = 1;
+}

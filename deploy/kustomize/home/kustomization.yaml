@@ -1,0 +1,35 @@
+namespace: vigo
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/name: vigo-home
+resources:
+- certificate.yaml
+- deployment.yaml
+- service.yaml
+- servicemonitor.yaml
+
+images:
+- name: vigo-home
+  newName: ghcr.io/yuha0/vigo-home
+  newTag: main
+
+# Keeps vigo-home off nodes that run other mDNS/HAP advertisers (Homebridge, Scrypted, another
+# vigo-home replica, ...): two advertisers on one host network interfere. Label those pods
+# app.kubernetes.io/component=mdns too.
+patches:
+- target:
+    group: apps
+  patch: |-
+    - op: add
+      path: /spec/template/spec/affinity
+      value:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - mdns
+            topologyKey: kubernetes.io/hostname

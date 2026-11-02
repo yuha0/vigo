@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vigo
+resources:
+- namespace.yaml
+- pki.yaml
+- db
+# The keyring Secret (vigo-keyring, key keyring.json) is not part of this sample: create it
+# yourself and back it up outside the cluster. See deploy/README.md.

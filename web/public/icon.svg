@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2724"/>
+      <stop offset="1" stop-color="#171614"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3e7d3"/>
+      <stop offset="1" stop-color="#e9c99b"/>
+    </linearGradient>
+    <clipPath id="canvas">
+      <rect x="140" y="182" width="232" height="130"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect x="118" y="160" width="276" height="174" rx="4" fill="#efe9df"/>
+  <rect x="132" y="174" width="248" height="146" fill="#d8cfc1"/>
+  <g clip-path="url(#canvas)">
+    <rect x="140" y="182" width="232" height="130" fill="url(#sky)"/>
+    <circle cx="300" cy="238" r="26" fill="#c9783f"/>
+    <path d="M140 276 C 190 246, 236 250, 276 270 S 344 296, 372 282 V 312 H 140 Z" fill="#6f7d63"/>
+    <path d="M140 296 C 196 280, 252 284, 300 298 S 352 306, 372 300 V 312 H 140 Z" fill="#3f4a3a"/>
+  </g>
+  <rect x="226" y="350" width="60" height="4" rx="2" fill="#8a8178"/>
+</svg>

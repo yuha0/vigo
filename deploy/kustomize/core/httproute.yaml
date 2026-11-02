@@ -1,0 +1,22 @@
+# Exposes the web UI through a Gateway API gateway. Adapt parentRefs and hostnames to your
+# cluster, or replace this with an Ingress. Do not expose it publicly: the UI has no
+# authentication of its own.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vigo-core
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gateway
+  hostnames:
+  - vigo.example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: vigo-core
+      port: 8080

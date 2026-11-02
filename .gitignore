@@ -1,0 +1,10 @@
+node_modules/
+/bin/
+/web/dist/
+/home/dist/
+/internal/coreapi/webdist/*
+!/internal/coreapi/webdist/.keep
+/.state/
+*.token
+/.cache/
+/.dev/

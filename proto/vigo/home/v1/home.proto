@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package vigo.home.v1;
+
+option go_package = "github.com/yuha0/vigo/gen/go/vigo/home/v1;homev1";
+
+// HomeService exposes the Apple Home (or future Matter) integration.
+service HomeService {
+  rpc GetProvider(GetProviderRequest) returns (GetProviderResponse);
+
+  rpc ListAccessories(ListAccessoriesRequest) returns (ListAccessoriesResponse);
+
+  rpc SetAccessoryEnabled(SetAccessoryEnabledRequest) returns (SetAccessoryEnabledResponse);
+
+  rpc ListPairingGroups(ListPairingGroupsRequest) returns (ListPairingGroupsResponse);
+
+  // Forgets all controllers paired to the group and issues a new setup code.
+  // The accessories disappear from Apple Home and must be re-added by hand.
+  rpc ResetPairing(ResetPairingRequest) returns (ResetPairingResponse);
+}
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_HOMEKIT = 1;
+  PROTOCOL_MATTER = 2;
+}
+
+message Provider {
+  Protocol protocol = 1;
+  // False for protocols that are only stubs.
+  bool implemented = 2;
+  bool leader = 3;
+  string replica = 4;
+  // vigo-home can reach vigo-core.
+  bool core_connected = 5;
+}
+
+enum AccessoryKind {
+  ACCESSORY_KIND_UNSPECIFIED = 0;
+  ACCESSORY_KIND_TELEVISION = 1;
+  ACCESSORY_KIND_SWITCH = 2;
+  ACCESSORY_KIND_LIGHTBULB = 3;
+}
+
+message Accessory {
+  // Stable id: "television", "keep_art_on", "art_mode", "art_brightness".
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  AccessoryKind kind = 4;
+  bool enabled = 5;
+  // False for accessories that are always on, like the television.
+  bool can_disable = 6;
+  string pairing_group_id = 7;
+}
+
+message PairingGroup {
+  // "tv" or "bridge".
+  string id = 1;
+  string name = 2;
+  // Currently announced over mDNS.
+  bool advertised = 3;
+  // At least one controller is paired.
+  bool paired = 4;
+  // "XXX-XX-XXX". Empty for protocols that don't use one.
+  string setup_code = 5;
+  // "X-HM://..." for HomeKit; encode as a QR code.
+  string setup_uri = 6;
+  repeated string accessory_ids = 7;
+}
+
+message GetProviderRequest {}
+
+message GetProviderResponse {
+  Provider provider = 1;
+}
+
+message ListAccessoriesRequest {}
+
+message ListAccessoriesResponse {
+  repeated Accessory accessories = 1;
+}
+
+message SetAccessoryEnabledRequest {
+  string id = 1;
+  bool enabled = 2;
+}
+
+message SetAccessoryEnabledResponse {
+  Accessory accessory = 1;
+}
+
+message ListPairingGroupsRequest {}
+
+message ListPairingGroupsResponse {
+  repeated PairingGroup groups = 1;
+}
+
+message ResetPairingRequest {
+  string group_id = 1;
+}
+
+message ResetPairingResponse {
+  PairingGroup group = 1;
+}

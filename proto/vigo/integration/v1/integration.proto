@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package vigo.integration.v1;
+
+option go_package = "github.com/yuha0/vigo/gen/go/vigo/integration/v1;integrationv1";
+
+// IntegrationService is how integrations such as vigo-home coordinate and
+// persist state. vigo-core serves it only on its mTLS listener. The caller's
+// integration kind comes from its client certificate's URI SAN
+// (spiffe://vigo/integration/<kind>), never from the request.
+service IntegrationService {
+  // Holds leadership for the caller's kind while the stream stays open.
+  // vigo-core backs each stream with a Postgres advisory lock on its own
+  // database session, so leadership ends when either side goes away. The
+  // first message reports the current role; a standby later receives LEADER
+  // when it wins. Once LEADER, the role never reverts on the same stream: the
+  // stream ends instead, and the integration must stop acting as leader.
+  rpc AcquireLeadership(AcquireLeadershipRequest) returns (stream AcquireLeadershipResponse);
+
+  // Records where vigo-core can reach the caller. Only the current leader of
+  // a kind may register; others get failed_precondition.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Returns all persisted state of the caller's kind.
+  rpc ListState(ListStateRequest) returns (ListStateResponse);
+
+  // Writes one item. Only the current leader may write.
+  rpc PutState(PutStateRequest) returns (PutStateResponse);
+
+  // Deletes one item. Deleting a missing key succeeds. Only the current
+  // leader may delete.
+  rpc DeleteState(DeleteStateRequest) returns (DeleteStateResponse);
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_STANDBY = 1;
+  ROLE_LEADER = 2;
+}
+
+message AcquireLeadershipRequest {
+  // Identifies the replica, e.g. its pod name. Shown in logs and Status.
+  string instance = 1;
+}
+
+message AcquireLeadershipResponse {
+  Role role = 1;
+  // Opaque token tying Register/PutState/DeleteState calls to this stream's
+  // leadership. Set only when role is LEADER.
+  string lease = 2;
+}
+
+message RegisterRequest {
+  string lease = 1;
+  // Base URL vigo-core uses to call the integration's own service over mTLS,
+  // e.g. "https://198.51.100.21:8081".
+  string endpoint = 2;
+}
+
+message RegisterResponse {}
+
+message StateItem {
+  // [-._a-zA-Z0-9]{1,200}
+  string key = 1;
+  bytes value = 2;
+  // Increases on every write of this key.
+  int64 version = 3;
+}
+
+message ListStateRequest {}
+
+message ListStateResponse {
+  repeated StateItem items = 1;
+}
+
+message PutStateRequest {
+  string lease = 1;
+  string key = 2;
+  bytes value = 3;
+  // When non-zero, the write succeeds only if the stored version equals it;
+  // otherwise aborted. Zero writes unconditionally.
+  int64 expected_version = 4;
+}
+
+message PutStateResponse {
+  int64 version = 1;
+}
+
+message DeleteStateRequest {
+  string lease = 1;
+  string key = 2;
+}
+
+message DeleteStateResponse {}

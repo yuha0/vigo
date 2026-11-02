@@ -1,0 +1,16 @@
+version: v2
+clean: true
+plugins:
+  - local: protoc-gen-go
+    out: gen/go
+    opt: paths=source_relative
+  - local: protoc-gen-connect-go
+    out: gen/go
+    opt: paths=source_relative
+  # web and home are independent npm projects, so each gets its own copy.
+  - local: protoc-gen-es
+    out: web/src/gen
+    opt: target=ts
+  - local: protoc-gen-es
+    out: home/src/gen
+    opt: target=ts

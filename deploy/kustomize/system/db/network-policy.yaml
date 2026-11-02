@@ -1,0 +1,40 @@
+# Only vigo-core reaches the database. The instances reach each other for replication, and the
+# CloudNativePG operator reaches each instance's status port (8000). Adjust the operator
+# namespace if CloudNativePG is not installed in cnpg-system.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          cnpg.io/cluster: db
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: vigo-core
+    ports:
+    - port: 5432
+      protocol: TCP
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: cnpg-system
+    ports:
+    - port: 8000
+      protocol: TCP
+  # Optional: let Prometheus scrape the instances' metrics exporter.
+  # - from:
+  #   - namespaceSelector:
+  #       matchLabels:
+  #         kubernetes.io/metadata.name: monitoring
+  #   ports:
+  #   - port: 9187
+  #     protocol: TCP

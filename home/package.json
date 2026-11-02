@@ -1,0 +1,33 @@
+{
+  "name": "vigo-home",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Apple Home integration for vigo",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && node --enable-source-maps dist/main.js --pki-dir ../.dev/pki/home",
+    "test": "vitest run",
+    "lint": "tsc --noEmit && eslint ."
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.16.0",
+    "@connectrpc/connect": "2.2.0",
+    "@connectrpc/connect-node": "2.2.0",
+    "@homebridge/hap-nodejs": "2.2.3",
+    "@prometheus-io/client": "0.16.1",
+    "pino": "10.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
+  }
+}
