@@ -148,7 +148,9 @@ func TestLeaderRecord(t *testing.T) {
 	if err != nil || l != (db.Leader{Identity: "core-0", Address: "10.0.0.5:8443"}) {
 		t.Fatalf("leader = %+v, %v", l, err)
 	}
+	pid := conn.PgConn().PID()
 	conn.Close(ctx)
+	e.WaitSessionGone(t, pid)
 	if _, err := e.DB.CurrentLeader(ctx); !errors.Is(err, db.ErrNotFound) {
 		t.Errorf("leader after its session closed: err = %v", err)
 	}
