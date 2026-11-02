@@ -32,7 +32,7 @@ The split also isolates failures: the TV token and the HomeKit pairing state bre
 ### Network requirements
 
 - **The TV must see vigo-core's traffic as coming from its own subnet** (it refuses WebSocket clients from anywhere else; `tv-api.md` §1). Either run vigo-core on that subnet or have the router masquerade traffic to the TV. With the latter, vigo-core is an ordinary pod; no `hostNetwork`.
-- **vigo-home needs `hostNetwork`** because HAP advertises over link-local mDNS. Use `dnsPolicy: ClusterFirstWithHostNet` so it can resolve the vigo-core Service, and the `app.kubernetes.io/component: mdns` label with a pod anti-affinity on it, so it stays off nodes running other mDNS advertisers.
+- **vigo-home needs `hostNetwork`** because HAP advertises over link-local mDNS. Use `dnsPolicy: ClusterFirstWithHostNet` so it can resolve the vigo-core Service, and a pod anti-affinity on its own pods: replicas bind the same host ports, so two must never share a node. Other mDNS/HAP advertisers such as Homebridge can share a node with it, since each uses its own HAP port and mDNS sockets are shared.
 
 | Listener | Component | Clients | Authentication |
 |---|---|---|---|

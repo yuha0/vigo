@@ -21,7 +21,7 @@ Images are `ghcr.io/yuha0/vigo-core` and `ghcr.io/yuha0/vigo-home`. The sample u
 ## Network
 
 - **The TV must see vigo-core's traffic as coming from its own subnet.** The TV refuses WebSocket connections from other subnets. Either route the pod network to the TV through a gateway that masquerades (source-NATs) that traffic into the TV's subnet, or run vigo-core on a node in that subnet with addresses the TV accepts. Set the TV's address in `VIGO_TV_HOST` (`core/deployment.yaml`).
-- **vigo-home uses `hostNetwork`**, because HomeKit advertises over link-local mDNS. It needs the node to be on the same LAN as your Apple devices, and the HAP ports 51830 and 51831 free on the node. Its required anti-affinity on `app.kubernetes.io/component=mdns` keeps it off nodes running other mDNS/HAP advertisers; label those pods the same way.
+- **vigo-home uses `hostNetwork`**, because HomeKit advertises over link-local mDNS. It needs the node to be on the same LAN as your Apple devices, and the HAP ports 51830 and 51831 free on the node. Its two replicas never share a node, because they bind the same host ports; other HomeKit bridges (Homebridge, Scrypted, ...) can share a node with it.
 - Don't expose vigo-core's HTTP port (8080) publicly: the web UI has no authentication.
 
 ## The encryption keyring

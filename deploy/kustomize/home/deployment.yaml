@@ -5,18 +5,25 @@ metadata:
 spec:
   replicas: 2
   revisionHistoryLimit: 2
-  # hostNetwork, fixed HAP ports and the mdns anti-affinity leave no room to surge.
+  # hostNetwork with fixed ports: a surge pod would need a node without a replica, so
+  # replace in place instead.
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
   template:
-    metadata:
-      labels:
-        # Marks this pod as an mDNS advertiser for the anti-affinity in kustomization.yaml.
-        app.kubernetes.io/component: mdns
     spec:
+      # Replicas bind the same host ports, so never two on one node. Other mDNS/HAP
+      # advertisers (Homebridge, Scrypted, ...) can share a node: each uses its own HAP
+      # port and mDNS sockets are shared.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: vigo-home
+            topologyKey: kubernetes.io/hostname
       # HAP is advertised over link-local mDNS.
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
