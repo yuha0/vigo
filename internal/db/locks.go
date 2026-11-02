@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -11,6 +12,8 @@ import (
 const (
 	keyMigrations int32 = 0
 	keyCoreLeader int32 = 1
+
+	releaseTimeout = 2 * time.Second
 )
 
 // Lock identifies a session-level advisory lock.
@@ -27,6 +30,16 @@ func (d *DB) IntegrationLock(kind string) Lock {
 	h := fnv.New32a()
 	h.Write([]byte(kind))
 	return Lock{d.lockClass + 1, int32(h.Sum32() & 0x7fffffff)}
+}
+
+// Release gives up l and closes conn. Closing alone also releases the lock,
+// but only once the server has noticed the closed connection; unlocking first
+// frees it for the next holder before Release returns.
+func Release(conn *pgx.Conn, l Lock) {
+	ctx, cancel := context.WithTimeout(context.Background(), releaseTimeout)
+	defer cancel()
+	_, _ = conn.Exec(ctx, `SELECT pg_advisory_unlock($1, $2)`, l.Class, l.Key)
+	_ = conn.Close(ctx)
 }
 
 // TryLock takes l on conn without waiting.

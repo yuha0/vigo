@@ -113,12 +113,12 @@ func (s *Service) AcquireLeadership(ctx context.Context, req *connect.Request[in
 	if err != nil {
 		return connect.NewError(connect.CodeUnavailable, err)
 	}
-	defer conn.Close(context.WithoutCancel(ctx))
+	lock := s.opts.DB.IntegrationLock(kind)
+	defer db.Release(conn, lock)
 
 	if err := stream.Send(&integrationv1.AcquireLeadershipResponse{Role: integrationv1.Role_ROLE_STANDBY}); err != nil {
 		return err
 	}
-	lock := s.opts.DB.IntegrationLock(kind)
 	for {
 		ok, err := db.TryLock(ctx, conn, lock)
 		if err != nil {

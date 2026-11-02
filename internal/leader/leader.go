@@ -86,7 +86,7 @@ func Run(ctx context.Context, cfg Config, lead func(context.Context) error) erro
 	if err != nil || conn == nil {
 		return err
 	}
-	defer conn.Close(context.WithoutCancel(ctx))
+	defer db.Release(conn, cfg.DB.CoreLeaderLock())
 	cfg.Log.Info("became leader", "backend_pid", conn.PgConn().PID())
 	if err := cfg.Elected(ctx, conn); err != nil {
 		return err
