@@ -80,6 +80,18 @@ describe("login", () => {
   });
 });
 
+describe("Security page", () => {
+  it("has its own rail entry and isn't on the TV page", async () => {
+    const { user } = renderApp("/tv");
+    const nav = await rail();
+    await screen.findByRole("heading", { name: "Art settings" });
+    expect(screen.queryByRole("form", { name: "Change password" })).not.toBeInTheDocument();
+    await user.click(within(nav).getByRole("link", { name: "Security" }));
+    expect(await screen.findByRole("form", { name: "Change password" })).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Security" })).toHaveAttribute("aria-current", "page");
+  });
+});
+
 describe("session", () => {
   it("returns to login and clears data when the session ends mid-session", async () => {
     const qc = createQueryClient();
@@ -110,7 +122,8 @@ describe("session", () => {
   });
 
   it("changes the password, explaining other devices are signed out", async () => {
-    const { user, backend } = renderApp("/tv");
+    const { user, backend } = renderApp("/security");
+    expect(await screen.findByRole("heading", { name: "Security", level: 1 })).toBeInTheDocument();
     const form = await screen.findByRole("form", { name: "Change password" });
     expect(form).toHaveTextContent("signs out every other device");
     const field = (name: string) => within(form).getByLabelText(name, { selector: "input" });

@@ -3,7 +3,6 @@ import { useLocation } from "react-router";
 
 import { Page, PageHeader, Section } from "@/components/Page";
 import { WarningsBanner } from "@/components/WarningsBanner";
-import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { ArtModeCard } from "@/features/tv/ArtModeCard";
 import { ConnectionCard } from "@/features/tv/ConnectionCard";
 import { DeviceCard } from "@/features/tv/DeviceCard";
@@ -43,9 +42,6 @@ export function TvScreen() {
         </Section>
         <Section title="Device" className="order-5">
           <DeviceCard status={status} />
-        </Section>
-        <Section id="security" title="Security" description="The password that protects this web app." className="order-6">
-          <ChangePasswordCard />
         </Section>
       </div>
     </Page>

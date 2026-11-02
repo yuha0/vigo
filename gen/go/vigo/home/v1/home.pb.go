@@ -1094,12 +1094,8 @@ func (x *RemoteBinding) GetTarget() *RemoteTarget {
 
 type KeyOption struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Key   string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	// Short human label, e.g. "Menu".
-	Label string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	// Verified to reach the tested TV; others are documented by the client
-	// library only.
-	Verified      bool `protobuf:"varint,3,opt,name=verified,proto3" json:"verified,omitempty"`
+	// A Samsung key code such as "KEY_MENU", shown as is.
+	Key           string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1139,20 +1135,6 @@ func (x *KeyOption) GetKey() string {
 		return x.Key
 	}
 	return ""
-}
-
-func (x *KeyOption) GetLabel() string {
-	if x != nil {
-		return x.Label
-	}
-	return ""
-}
-
-func (x *KeyOption) GetVerified() bool {
-	if x != nil {
-		return x.Verified
-	}
-	return false
 }
 
 type GetRemoteMappingRequest struct {
@@ -1468,11 +1450,9 @@ const file_vigo_home_v1_home_proto_rawDesc = "" +
 	"\x06target\"\x8b\x01\n" +
 	"\rRemoteBinding\x122\n" +
 	"\x06button\x18\x01 \x01(\x0e2\x1a.vigo.home.v1.RemoteButtonR\x06button\x122\n" +
-	"\x06target\x18\x02 \x01(\v2\x1a.vigo.home.v1.RemoteTargetR\x06targetJ\x04\b\x03\x10\x04R\fshown_by_ios\"O\n" +
+	"\x06target\x18\x02 \x01(\v2\x1a.vigo.home.v1.RemoteTargetR\x06targetJ\x04\b\x03\x10\x04R\fshown_by_ios\":\n" +
 	"\tKeyOption\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1a\n" +
-	"\bverified\x18\x03 \x01(\bR\bverified\"\x19\n" +
+	"\x03key\x18\x01 \x01(\tR\x03keyJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\x05labelR\bverified\"\x19\n" +
 	"\x17GetRemoteMappingRequest\"\x80\x01\n" +
 	"\x18GetRemoteMappingResponse\x127\n" +
 	"\bbindings\x18\x01 \x03(\v2\x1b.vigo.home.v1.RemoteBindingR\bbindings\x12+\n" +

@@ -16,7 +16,7 @@ import {
   VolumeX,
   type LucideIcon,
 } from "lucide-react";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import {
@@ -85,6 +85,10 @@ function decode(v: string): RemoteTarget["target"] {
   return { case: "action", value: Number(v.slice(7)) as RemoteAction };
 }
 
+// One grid for every row: the phone's button on the left, a fixed-width picker on the right.
+// On narrow screens the picker sits under its label, full width.
+const rowGrid = "grid grid-cols-1 items-center gap-x-4 gap-y-2 py-3 sm:grid-cols-[minmax(0,1fr)_13.5rem]";
+
 export function RemoteMappingSection({ mapping }: { mapping: GetRemoteMappingResponse | undefined }) {
   if (!mapping) {
     return <Skeleton className="h-96 w-full rounded-2xl" />;
@@ -97,7 +101,7 @@ export function RemoteMappingSection({ mapping }: { mapping: GetRemoteMappingRes
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="max-w-prose">
           <h2 id="remote-buttons-title" className="font-display text-2xl">
-            iPhone remote buttons
+            Remote app button mapping
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Apple draws the remote in Control Center, so buttons can't be added or removed. Each one can do something different on the TV, though.
@@ -108,18 +112,15 @@ export function RemoteMappingSection({ mapping }: { mapping: GetRemoteMappingRes
       <ul className="mt-3 divide-y divide-border/70 px-5 sm:px-6" aria-label="Remote buttons">
         {power.length > 0 && (
           <li className="py-3" data-button="POWER">
-            <div className="flex items-center gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-                <Power className="size-5" strokeWidth={1.75} aria-hidden="true" />
-              </span>
-              <h3 className="font-medium">Power button</h3>
-            </div>
-            <ul aria-label="Power button" className="mt-1 ml-[3.75rem] divide-y divide-border/50">
+            <ButtonName icon={Power} heading>
+              Power button
+            </ButtonName>
+            <ul aria-label="Power button" className="divide-y divide-border/50">
               {power.map((b) => (
                 <BindingRow key={b.button} binding={b} keys={mapping.keys} nested />
               ))}
             </ul>
-            <p className="mt-2 ml-[3.75rem] text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground sm:pl-15">
               There is no verified way to power this TV off remotely; Toggle Art Mode switches to TV mode.
             </p>
           </li>
@@ -133,34 +134,44 @@ export function RemoteMappingSection({ mapping }: { mapping: GetRemoteMappingRes
   );
 }
 
+function ButtonName({ icon: Icon, heading = false, children }: { icon: LucideIcon; heading?: boolean; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-center gap-4">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
+        <Icon className="size-5" strokeWidth={1.75} aria-hidden="true" />
+      </span>
+      {heading ? <h3 className="font-medium">{children}</h3> : <div className="min-w-0">{children}</div>}
+    </div>
+  );
+}
+
 function BindingRow({ binding, keys, nested = false }: { binding: RemoteBinding; keys: KeyOption[]; nested?: boolean }) {
   const update = useUpdateRemoteBinding();
   const id = useId();
   const meta = buttons[binding.button] ?? buttons[RemoteButton.UNSPECIFIED];
   const value = encode(binding.target);
   const saving = update.isPending;
+  const name = nested ? `Power, ${meta.label.charAt(0).toLowerCase()}${meta.label.slice(1)}` : meta.label;
+
+  const label = (
+    <>
+      <label htmlFor={id} className={nested ? "text-sm" : "font-medium"}>
+        {meta.label}
+      </label>
+      {meta.hint && <p className="text-xs text-muted-foreground">{meta.hint}</p>}
+    </>
+  );
 
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3" data-button={RemoteButton[binding.button]}>
-      {!nested && (
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-          <meta.icon className="size-5" strokeWidth={1.75} aria-hidden="true" />
-        </span>
-      )}
-      <div className="min-w-0 flex-1 basis-28">
-        <label htmlFor={id} className={nested ? "text-sm" : "font-medium"}>
-          {meta.label}
-        </label>
-        {meta.hint && <p className="text-xs text-muted-foreground">{meta.hint}</p>}
-      </div>
-      <div className="flex w-full items-center gap-2 sm:w-64">
+    <li className={rowGrid} data-button={RemoteButton[binding.button]}>
+      {/* Nested power rows line their labels up with the other rows' labels, past the icon column. */}
+      {nested ? <div className="min-w-0 sm:pl-15">{label}</div> : <ButtonName icon={meta.icon}>{label}</ButtonName>}
+      <div className="flex items-center gap-1.5">
         <Select
           value={value}
-          onValueChange={(v) =>
-            update.mutate(create(RemoteBindingSchema, { button: binding.button, target: { target: decode(v) } }))
-          }
+          onValueChange={(v) => update.mutate(create(RemoteBindingSchema, { button: binding.button, target: { target: decode(v) } }))}
         >
-          <SelectTrigger id={id} aria-label={`${nested ? `Power, ${meta.label.charAt(0).toLowerCase()}${meta.label.slice(1)}` : meta.label} does`}>
+          <SelectTrigger id={id} aria-label={`${name} does`} className="min-w-0 flex-1">
             <SelectValue placeholder="Not set" />
           </SelectTrigger>
           <SelectContent>
@@ -176,15 +187,8 @@ function BindingRow({ binding, keys, nested = false }: { binding: RemoteBinding;
             <SelectGroup>
               <SelectLabel>TV keys</SelectLabel>
               {keys.map((k) => (
-                <SelectItem key={k.key} value={`key:${k.key}`} textValue={k.label}>
-                  {k.label}
-                  <span className="ml-2 font-mono text-[0.75rem] text-muted-foreground">{k.key}</span>
-                  {!k.verified && (
-                    <span className="ml-1.5 text-[0.75rem] text-muted-foreground" title="Not verified on the tested TV">
-                      ·<span className="sr-only"> not verified on the tested TV</span>
-                      <span aria-hidden="true"> unverified</span>
-                    </span>
-                  )}
+                <SelectItem key={k.key} value={`key:${k.key}`} className="font-mono text-[0.875rem]">
+                  {k.key}
                 </SelectItem>
               ))}
             </SelectGroup>

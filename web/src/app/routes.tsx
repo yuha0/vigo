@@ -8,6 +8,7 @@ import { HomeScreen } from "@/features/home/HomeScreen";
 const TvScreen = lazy(() => import("@/features/tv/TvScreen").then((m) => ({ default: m.TvScreen })));
 const GalleryScreen = lazy(() => import("@/features/gallery/GalleryScreen").then((m) => ({ default: m.GalleryScreen })));
 const AppleHomeScreen = lazy(() => import("@/features/apple-home/AppleHomeScreen").then((m) => ({ default: m.AppleHomeScreen })));
+const SecurityScreen = lazy(() => import("@/features/auth/SecurityScreen").then((m) => ({ default: m.SecurityScreen })));
 const RemoteScreen = lazy(() => import("@/features/remote/RemoteScreen").then((m) => ({ default: m.RemoteScreen })));
 
 export const routes: RouteObject[] = [
@@ -27,6 +28,7 @@ export const routes: RouteObject[] = [
       },
       { path: "apple-home", element: <Navigate to="/integrations/apple-home" replace /> },
       { path: "remote", element: <RemoteScreen /> },
+      { path: "security", element: <SecurityScreen /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

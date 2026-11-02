@@ -27,8 +27,6 @@ export interface RemoteBindingView {
 
 export interface KeyOptionView {
   key: string;
-  label: string;
-  verified: boolean;
 }
 
 export interface RemoteMappingView {
@@ -56,40 +54,37 @@ export const REMOTE_BUTTONS: readonly RemoteButtonName[] = [
   "mute",
 ];
 
-/** Only these keys have been observed reaching the tested TV. */
-const VERIFIED_KEYS = new Set(["KEY_UP", "KEY_ENTER", "KEY_HOME", "KEY_VOLUP"]);
-
 // The keys samsungtvws documents (its shortcuts, plus KEY_<n> digits), KEY_POWER excluded:
 // https://github.com/xchwarze/samsung-tv-ws-api/blob/1b7302b1509d62f6c375d8ca401b100ee55670dc/samsungtvws/shortcuts.py
-const KEYS: readonly [string, string][] = [
-  ["KEY_UP", "Up"],
-  ["KEY_DOWN", "Down"],
-  ["KEY_LEFT", "Left"],
-  ["KEY_RIGHT", "Right"],
-  ["KEY_ENTER", "OK"],
-  ["KEY_RETURN", "Back"],
-  ["KEY_HOME", "Home"],
-  ["KEY_MENU", "Menu"],
-  ["KEY_TOOLS", "Tools"],
-  ["KEY_INFO", "Info"],
-  ["KEY_GUIDE", "Guide"],
-  ["KEY_SOURCE", "Source"],
-  ["KEY_CH_LIST", "Channel list"],
-  ["KEY_CHUP", "Channel up"],
-  ["KEY_CHDOWN", "Channel down"],
-  ["KEY_VOLUP", "Volume up"],
-  ["KEY_VOLDOWN", "Volume down"],
-  ["KEY_MUTE", "Mute"],
-  ["KEY_RED", "Red"],
-  ["KEY_GREEN", "Green"],
-  ["KEY_YELLOW", "Yellow"],
-  ["KEY_BLUE", "Blue"],
-  ...Array.from({ length: 10 }, (_, i): [string, string] => [`KEY_${i}`, String(i)]),
+const KEYS: readonly string[] = [
+  "KEY_UP",
+  "KEY_DOWN",
+  "KEY_LEFT",
+  "KEY_RIGHT",
+  "KEY_ENTER",
+  "KEY_RETURN",
+  "KEY_HOME",
+  "KEY_MENU",
+  "KEY_TOOLS",
+  "KEY_INFO",
+  "KEY_GUIDE",
+  "KEY_SOURCE",
+  "KEY_CH_LIST",
+  "KEY_CHUP",
+  "KEY_CHDOWN",
+  "KEY_VOLUP",
+  "KEY_VOLDOWN",
+  "KEY_MUTE",
+  "KEY_RED",
+  "KEY_GREEN",
+  "KEY_YELLOW",
+  "KEY_BLUE",
+  ...Array.from({ length: 10 }, (_, i) => `KEY_${i}`),
 ];
 
-export const KEY_OPTIONS: readonly KeyOptionView[] = KEYS.map(([key, label]) => ({ key, label, verified: VERIFIED_KEYS.has(key) }));
+export const KEY_OPTIONS: readonly KeyOptionView[] = KEYS.map((key) => ({ key }));
 
-const ALLOWED_KEYS = new Set(KEYS.map(([key]) => key));
+const ALLOWED_KEYS = new Set(KEYS);
 const ACTIONS = new Set<string>(["none", "toggle_art_mode", "show_art"]);
 
 export const DEFAULT_REMOTE_MAPPING: Readonly<Record<RemoteButtonName, RemoteTargetView>> = {

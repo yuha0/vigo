@@ -10,7 +10,7 @@ import { renderApp } from "@/test/render";
 const PATH = "/integrations/apple-home";
 
 async function section() {
-  const heading = await screen.findByRole("heading", { name: "iPhone remote buttons" });
+  const heading = await screen.findByRole("heading", { name: "Remote app button mapping" });
   return heading.closest("section") as HTMLElement;
 }
 
@@ -21,7 +21,7 @@ async function choose(user: ReturnType<typeof renderApp>["user"], button: string
   await user.click(await screen.findByRole("option", { name: option }));
 }
 
-describe("iPhone remote buttons", () => {
+describe("Remote app button mapping", () => {
   it("lists the iPhone remote's buttons, power first as one group", async () => {
     renderApp(PATH);
     const card = await section();
@@ -52,7 +52,8 @@ describe("iPhone remote buttons", () => {
     expect(card).toHaveTextContent("There is no verified way to power this TV off remotely; Toggle Art Mode switches to TV mode.");
 
     expect(within(list).getByText("The phone's volume-up button while the remote is open")).toBeInTheDocument();
-    expect(picker("Select (centre)")).toHaveTextContent("KEY_ENTER");
+    expect(picker("Select (centre)")).toHaveTextContent(/^KEY_ENTER$/);
+    expect(picker("Up")).toHaveTextContent(/^KEY_UP$/);
     expect(picker("Info (i)")).toHaveTextContent("Nothing");
     expect(picker("Play/Pause")).toHaveTextContent("Nothing");
     expect(picker("Mute")).toHaveTextContent("KEY_MUTE");
@@ -70,15 +71,16 @@ describe("iPhone remote buttons", () => {
     );
   });
 
-  it("offers actions and TV keys, marks unverified keys, and never KEY_POWER", async () => {
-    const { user } = renderApp(PATH);
+  it("offers our actions and the TV keys exactly as the API names them, never KEY_POWER", async () => {
+    const { user, backend } = renderApp(PATH);
     await section();
     await user.click(picker("Info (i)"));
     const listbox = await screen.findByRole("listbox");
     expect(within(listbox).getByRole("option", { name: "Toggle Art Mode" })).toBeInTheDocument();
     expect(within(listbox).getByRole("option", { name: "Show art" })).toBeInTheDocument();
-    expect(within(listbox).getByRole("option", { name: /^Menu.*KEY_MENU.*not verified/ })).toBeInTheDocument();
-    expect(within(listbox).getByRole("option", { name: /^Up\s*KEY_UP$/ })).toBeInTheDocument();
+    const keys = within(listbox).getAllByRole("option").map((o) => o.textContent).filter((t) => t?.startsWith("KEY_"));
+    expect(keys).toEqual(backend.home.remoteMapping().keys.map((k) => k.key));
+    expect(listbox).not.toHaveTextContent(/verified/i);
     expect(within(listbox).queryByRole("option", { name: /KEY_POWER/ })).not.toBeInTheDocument();
   });
 
@@ -96,7 +98,7 @@ describe("iPhone remote buttons", () => {
       target: { target: { case: "action", value: RemoteAction.TOGGLE_ART_MODE } },
     });
 
-    await choose(user, "Play/Pause", /^Menu/);
+    await choose(user, "Play/Pause", "KEY_MENU");
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
     expect(spy.mock.calls[1][0][0].target?.target).toEqual({ case: "key", value: "KEY_MENU" });
 
@@ -137,7 +139,7 @@ describe("iPhone remote buttons", () => {
   it("shows the offline state when vigo-home is down", async () => {
     renderApp(PATH, { homeMode: "offline" });
     expect(await screen.findByRole("heading", { name: "HomeKit service offline" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "iPhone remote buttons" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Remote app button mapping" })).not.toBeInTheDocument();
   });
 
   it("validates keys in the mock like the server", async () => {

@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, ShieldCheck } from "lucide-react";
 import { Suspense, useId, useState } from "react";
 import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 
@@ -67,6 +67,10 @@ function Rail({ hasWarnings }: { hasWarnings: boolean }) {
         )}
       </ul>
       <div className="flex shrink-0 flex-col items-center gap-2 px-2 pt-2 pb-5 lg:items-stretch lg:px-3">
+        <NavLink to="/security" className={({ isActive }) => cn(railItem, isActive ? railActive : railIdle)}>
+          <ShieldCheck className="size-[1.375rem] lg:size-5" strokeWidth={1.75} aria-hidden="true" />
+          <span className="max-w-full truncate leading-tight">Security</span>
+        </NavLink>
         <SignOutButton />
         <div className="flex justify-center pt-2 lg:justify-start lg:px-3">
           <LiveIndicator className="flex-col gap-1 text-[0.625rem] lg:flex-row lg:gap-2 lg:text-xs" />

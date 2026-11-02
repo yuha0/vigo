@@ -165,12 +165,10 @@ message RemoteBinding {
 }
 
 message KeyOption {
+  reserved 2, 3;
+  reserved "label", "verified";
+  // A Samsung key code such as "KEY_MENU", shown as is.
   string key = 1;
-  // Short human label, e.g. "Menu".
-  string label = 2;
-  // Verified to reach the tested TV; others are documented by the client
-  // library only.
-  bool verified = 3;
 }
 
 message GetRemoteMappingRequest {}

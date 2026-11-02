@@ -241,7 +241,6 @@ describe("HomeKitProvider remote mapping", () => {
       ["volume_down", { key: "KEY_VOLDOWN" }],
       ["mute", { key: "KEY_MUTE" }],
     ]);
-    expect(m.keys.filter((k) => k.verified).map((k) => k.key).sort()).toEqual(["KEY_ENTER", "KEY_HOME", "KEY_UP", "KEY_VOLUP"]);
     expect(m.keys.map((k) => k.key).sort()).toEqual(
       [
         "KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT",

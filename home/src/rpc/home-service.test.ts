@@ -137,7 +137,9 @@ describe("HomeService", () => {
     expect(m.bindings[0]).toMatchObject({ button: RemoteButton.POWER_ON, target: { target: { case: "action", value: RemoteAction.SHOW_ART } } });
     expect(m.bindings[2]).toMatchObject({ button: RemoteButton.ARROW_UP, target: { target: { case: "key", value: "KEY_UP" } } });
     expect(m.bindings.find((b) => b.button === RemoteButton.INFORMATION)?.target?.target).toEqual({ case: "action", value: RemoteAction.NONE });
-    expect(m.keys.find((k) => k.key === "KEY_UP")).toMatchObject({ label: "Up", verified: true });
+    expect(m.keys).toHaveLength(32);
+    expect(m.keys[0]).toEqual(expect.objectContaining({ key: "KEY_UP" }));
+    expect(Object.keys(m.keys[0]!).filter((k) => !k.startsWith("$"))).toEqual(["key"]);
 
     const up = await c.updateRemoteMapping({
       bindings: [{ button: RemoteButton.PLAY_PAUSE, target: { target: { case: "action", value: RemoteAction.TOGGLE_ART_MODE } } }],

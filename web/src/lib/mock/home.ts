@@ -32,34 +32,32 @@ export function setupUri(code: string, category: number, setupId: string): strin
   return `X-HM://${payload.toString(36).toUpperCase().padStart(9, "0")}${setupId}`;
 }
 
-const verifiedKeys = new Set(["KEY_UP", "KEY_ENTER", "KEY_HOME", "KEY_VOLUP"]);
-
 /** The keys vigo-home allows binding: documented by samsungtvws, never KEY_POWER. */
 export const remoteKeys = [
-  ["KEY_UP", "Up"],
-  ["KEY_DOWN", "Down"],
-  ["KEY_LEFT", "Left"],
-  ["KEY_RIGHT", "Right"],
-  ["KEY_ENTER", "Enter"],
-  ["KEY_RETURN", "Return"],
-  ["KEY_HOME", "Home"],
-  ["KEY_MENU", "Menu"],
-  ["KEY_TOOLS", "Tools"],
-  ["KEY_GUIDE", "Guide"],
-  ["KEY_INFO", "Info"],
-  ["KEY_SOURCE", "Source"],
-  ["KEY_CH_LIST", "Channel list"],
-  ["KEY_CHUP", "Channel up"],
-  ["KEY_CHDOWN", "Channel down"],
-  ["KEY_VOLUP", "Volume up"],
-  ["KEY_VOLDOWN", "Volume down"],
-  ["KEY_MUTE", "Mute"],
-  ["KEY_RED", "Red"],
-  ["KEY_GREEN", "Green"],
-  ["KEY_YELLOW", "Yellow"],
-  ["KEY_BLUE", "Blue"],
-  ...Array.from({ length: 10 }, (_, d) => [`KEY_${d}`, String(d)]),
-].map(([key, label]) => create(KeyOptionSchema, { key, label, verified: verifiedKeys.has(key) }));
+  "KEY_UP",
+  "KEY_DOWN",
+  "KEY_LEFT",
+  "KEY_RIGHT",
+  "KEY_ENTER",
+  "KEY_RETURN",
+  "KEY_HOME",
+  "KEY_MENU",
+  "KEY_TOOLS",
+  "KEY_GUIDE",
+  "KEY_INFO",
+  "KEY_SOURCE",
+  "KEY_CH_LIST",
+  "KEY_CHUP",
+  "KEY_CHDOWN",
+  "KEY_VOLUP",
+  "KEY_VOLDOWN",
+  "KEY_MUTE",
+  "KEY_RED",
+  "KEY_GREEN",
+  "KEY_YELLOW",
+  "KEY_BLUE",
+  ...Array.from({ length: 10 }, (_, d) => `KEY_${d}`),
+].map((key) => create(KeyOptionSchema, { key }));
 
 const defaultKeys: Partial<Record<RemoteButton, string>> = {
   [RemoteButton.ARROW_UP]: "KEY_UP",
