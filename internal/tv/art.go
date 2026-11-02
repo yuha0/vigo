@@ -225,7 +225,7 @@ func (s *Service) Upload(ctx context.Context, r io.Reader, fit imageprep.Fit, ma
 	if err != nil {
 		return nil, err
 	}
-	data, err := imageprep.Prepare(r, fit)
+	data, err := s.opts.Prepare(r, fit)
 	if err != nil {
 		return nil, errs.Wrap(ErrInvalidArgument, err)
 	}

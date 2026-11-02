@@ -3,12 +3,27 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: {interval: weekly}
+    cooldown: {default-days: 14}
   - package-ecosystem: docker
     directories: [/]
     schedule: {interval: weekly}
+    cooldown: {default-days: 14}
   - package-ecosystem: gomod
     directory: /
     schedule: {interval: weekly}
+    cooldown: {default-days: 14}
+    groups:
+      connectrpc:
+        patterns: [connectrpc.com/*, google.golang.org/protobuf]
   - package-ecosystem: npm
     directories: [/web, /home]
     schedule: {interval: weekly}
+    cooldown: {default-days: 14}
+    ignore:
+      # Must match the protoc-gen-es version the generated code comes from; updated with it by hand.
+      - dependency-name: "@bufbuild/*"
+    groups:
+      connectrpc:
+        patterns: ["@connectrpc/*"]
+      typescript:
+        patterns: [typescript, typescript-eslint, "@typescript-eslint/*"]

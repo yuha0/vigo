@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 	"sync"
@@ -19,6 +20,7 @@ import (
 
 	corev1 "github.com/yuha0/vigo/gen/go/vigo/core/v1"
 	"github.com/yuha0/vigo/internal/errs"
+	"github.com/yuha0/vigo/internal/imageprep"
 	"github.com/yuha0/vigo/internal/metrics"
 	"github.com/yuha0/vigo/internal/samsung"
 )
@@ -67,6 +69,9 @@ type Options struct {
 	ThumbnailConcurrency int
 	// ThumbnailRetryInterval spaces retries of a fresh upload's thumbnail.
 	ThumbnailRetryInterval time.Duration
+	// Prepare turns an upload into the JPEG sent to the TV; nil is
+	// imageprep.Prepare. Tests substitute a small canvas.
+	Prepare func(io.Reader, imageprep.Fit) ([]byte, error)
 }
 
 func (o *Options) setDefaults() {
@@ -92,6 +97,9 @@ func (o *Options) setDefaults() {
 	}
 	if o.Log == nil {
 		o.Log = discardLogger()
+	}
+	if o.Prepare == nil {
+		o.Prepare = imageprep.Prepare
 	}
 	if o.Metrics == nil {
 		o.Metrics = metrics.New()

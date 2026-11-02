@@ -9,10 +9,12 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -39,7 +41,19 @@ type env struct {
 	m    *metrics.Metrics
 }
 
+// smallPrepare runs the upload pipeline on a 64x36 canvas: the sync logic
+// does not depend on the size, and 3840x2160 under -race costs seconds per
+// upload. TestAdd keeps the real size end to end.
+func smallPrepare(r io.Reader, fit imageprep.Fit) ([]byte, error) {
+	return imageprep.PrepareTo(r, fit, 64, 36)
+}
+
 func newEnv(t *testing.T, sourceQuery string) *env {
+	t.Helper()
+	return newEnvWith(t, sourceQuery, smallPrepare)
+}
+
+func newEnvWith(t *testing.T, sourceQuery string, prepare func(io.Reader, imageprep.Fit) ([]byte, error)) *env {
 	t.Helper()
 	e := dbtest.Open(t)
 	ctx := context.Background()
@@ -56,6 +70,7 @@ func newEnv(t *testing.T, sourceQuery string) *env {
 		RequestTimeout: 2 * time.Second,
 		ReconnectMin:   5 * time.Millisecond,
 		ReconnectMax:   20 * time.Millisecond,
+		Prepare:        prepare,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -212,8 +227,27 @@ func seeded(t *testing.T) *env {
 	return e
 }
 
+// TestAdd runs the real upload pipeline, 3840x2160, end to end.
 func TestAdd(t *testing.T) {
-	e := newEnv(t, "")
+	var prepared []int
+	var mu sync.Mutex
+	e := newEnvWith(t, "", func(r io.Reader, fit imageprep.Fit) ([]byte, error) {
+		out, err := imageprep.Prepare(r, fit)
+		if err == nil {
+			w, h, _, _ := imageprep.Probe(out)
+			mu.Lock()
+			prepared = append(prepared, w, h)
+			mu.Unlock()
+		}
+		return out, err
+	})
+	defer func() {
+		mu.Lock()
+		defer mu.Unlock()
+		if len(prepared) == 0 || prepared[0] != imageprep.Width || prepared[1] != imageprep.Height {
+			t.Errorf("uploads were prepared at %v, want 3840x2160", prepared)
+		}
+	}()
 	e.writeImage("2024/winter.jpg", 64, 36, 1)
 	e.writeImage("portrait.jpg", 36, 64, 2)
 	e.writeImage(".hidden.jpg", 64, 36, 3)
@@ -761,7 +795,7 @@ func TestFakeTVRestoredAcrossRestart(t *testing.T) {
 	// Point the library at a service over the restored TV and list twice.
 	st := tv.NewMemoryStore()
 	st.SetToken(e.ctx, fake.Token, "vigo")
-	svc, err := tv.New(tv.Options{Defaults: tv.Config{Host: "tv.test"}, Store: st, NewClient: restored.Client, PollInterval: time.Hour, ReconnectMin: 5 * time.Millisecond})
+	svc, err := tv.New(tv.Options{Defaults: tv.Config{Host: "tv.test"}, Store: st, NewClient: restored.Client, PollInterval: time.Hour, ReconnectMin: 5 * time.Millisecond, Prepare: smallPrepare})
 	if err != nil {
 		t.Fatal(err)
 	}
